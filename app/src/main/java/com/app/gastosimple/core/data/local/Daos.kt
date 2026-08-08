@@ -11,17 +11,17 @@ import kotlinx.coroutines.flow.Flow
 interface GastoSimpleDao {
     // Users
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertUser(user: UserEntity)
+    suspend fun insertUser(user: UserEntity): Unit
 
     @Query("SELECT * FROM users")
     fun getAllUsers(): Flow<List<UserEntity>>
 
     @Query("DELETE FROM users")
-    suspend fun deleteAllUsers()
+    suspend fun deleteAllUsers(): Unit
 
     // Expenses
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertExpense(expense: ExpenseEntity)
+    suspend fun insertExpense(expense: ExpenseEntity): Unit
 
     @Query("SELECT * FROM expenses WHERE periodId = :periodId ORDER BY date DESC")
     fun getExpensesByPeriod(periodId: Long): Flow<List<ExpenseEntity>>
@@ -34,7 +34,7 @@ interface GastoSimpleDao {
     suspend fun insertPeriod(period: BudgetPeriodEntity): Long
 
     @Update
-    suspend fun updatePeriod(period: BudgetPeriodEntity)
+    suspend fun updatePeriod(period: BudgetPeriodEntity): Unit
 
     @Query("SELECT * FROM budget_periods WHERE isActive = 1 LIMIT 1")
     fun getActivePeriod(): Flow<BudgetPeriodEntity?>

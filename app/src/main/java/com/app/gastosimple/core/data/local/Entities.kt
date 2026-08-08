@@ -17,7 +17,8 @@ data class ExpenseEntity(
     val amount: String, // Stored as String for BigDecimal precision
     val concept: String,
     val category: String,
-    val userId: Long,
+    val userId: Long?, // Nullable if isShared is true
+    val isShared: Boolean = false,
     val date: Long,
     val recurrence: String, // "NONE", "DAILY", "WEEKLY", "MONTHLY"
     val periodId: Long // Link to a specific budget period

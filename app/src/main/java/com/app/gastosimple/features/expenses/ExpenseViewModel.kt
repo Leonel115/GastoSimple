@@ -15,12 +15,13 @@ data class ExpensesUiState(
     val expenses: List<ExpenseEntity> = emptyList(),
     val users: List<UserEntity> = emptyList(),
     val isLoading: Boolean = true,
-    val savingsMessage: String? = null
+    val remainingBudget: String = "0.0",
+    val error: String? = null
 )
 
 class ExpenseViewModel(
     private val repository: ExpenseRepository,
-    private val dao: com.app.gastosimple.core.data.local.GastoSimpleDao // Temporary direct access for complex logic
+    private val dao: com.app.gastosimple.core.data.local.GastoSimpleDao
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ExpensesUiState())
@@ -38,11 +39,15 @@ class ExpenseViewModel(
                         repository.getExpenses(period.id),
                         repository.getUsers()
                     ) { expenses, users ->
+                        val totalSpent = expenses.sumOf { BigDecimal(it.amount) }
+                        val remaining = BigDecimal(period.totalBudget).subtract(totalSpent)
+                        
                         ExpensesUiState(
                             activePeriod = period,
                             expenses = expenses,
                             users = users,
-                            isLoading = false
+                            isLoading = false,
+                            remainingBudget = remaining.toPlainString()
                         )
                     }.collect { _state.value = it }
                 } else {
@@ -52,8 +57,21 @@ class ExpenseViewModel(
         }
     }
 
-    fun addExpense(amount: String, concept: String, category: String, userId: Long, recurrence: String) {
+    fun addExpense(amount: String, concept: String, category: String, userId: Long?, isShared: Boolean, recurrence: String) {
         val periodId = _state.value.activePeriod?.id ?: return
+        val amountVal = amount.toBigDecimalOrNull() ?: BigDecimal.ZERO
+        
+        if (amountVal <= BigDecimal.ZERO) {
+            _state.value = _state.value.copy(error = "El monto debe ser mayor a 0")
+            return
+        }
+        
+        val remaining = _state.value.remainingBudget.toBigDecimal()
+        if (amountVal > remaining) {
+            _state.value = _state.value.copy(error = "El monto supera el presupuesto restante ($${remaining.toPlainString()})")
+            return
+        }
+
         viewModelScope.launch {
             repository.addExpense(
                 ExpenseEntity(
@@ -61,20 +79,17 @@ class ExpenseViewModel(
                     concept = concept,
                     category = category,
                     userId = userId,
+                    isShared = isShared,
                     date = Date().time,
                     recurrence = recurrence,
                     periodId = periodId
                 )
             )
+            _state.value = _state.value.copy(error = null)
         }
     }
 
-    fun checkCycleEnd() {
-        val period = _state.value.activePeriod ?: return
-        // Simplification for MVP: Logic to detect if period should end
-        // If ended:
-        // 1. Calculate savings
-        // 2. Close current period
-        // 3. Create new period
+    fun clearError() {
+        _state.value = _state.value.copy(error = null)
     }
 }

@@ -13,9 +13,12 @@
     <string name="quincenal">Quincenal</string>
     <string name="mensual">Mensual</string>
     <string name="add_user">Agregar Usuario</string>
+    <string name="remove_user">Eliminar</string>
     <string name="user_name_hint">Nombre del usuario</string>
     <string name="contribution_percentage">Porcentaje de aporte</string>
     <string name="error_sum_percentage">La suma de porcentajes debe ser exactamente 100%%</string>
+    <string name="single_user">Usuario Único</string>
+    <string name="multi_user">Varios Usuarios</string>
 
     <!-- Expenses -->
     <string name="expenses_title">Gastos</string>
@@ -25,15 +28,23 @@
     <string name="concept_hint">Concepto</string>
     <string name="category_label">Categoría</string>
     <string name="recurrence_label">Recurrencia</string>
+    <string name="payer_label">Pagador</string>
+    <string name="shared_expense">Gasto Compartido</string>
     <string name="none">Ninguna</string>
     <string name="daily">Diario</string>
     <string name="weekly">Semanal</string>
     <string name="monthly">Mensual</string>
 
+    <!-- Error Messages -->
+    <string name="error_invalid_amount">El monto debe ser mayor a 0</string>
+    <string name="error_insufficient_budget">El monto supera el presupuesto restante (%s)</string>
+
     <!-- Categories -->
     <string name="cat_rent">Alquiler</string>
     <string name="cat_food">Alimentación</string>
     <string name="cat_services">Servicios</string>
+    <string name="cat_subscriptions">Suscripciones</string>
+    <string name="cat_other">Otros</string>
 
     <!-- Savings -->
     <string name="savings_message">¡Has ahorrado %s!</string>
