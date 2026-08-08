@@ -1,0 +1,29 @@
+# Build artifacts
+build/
+.gradle/
+bin/
+gen/
+out/
+.artifacts/
+
+# IDE files
+.idea/
+*.iml
+*.iws
+*.ipr
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Android Studio / IntelliJ
+*.keystore
+!debug.keystore
+*.jks
+google-services.json
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Local configuration
+local.properties

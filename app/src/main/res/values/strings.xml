@@ -1,0 +1,46 @@
+<resources>
+    <string name="app_name">GastoSimple</string>
+    <!-- Common -->
+    <string name="save">Guardar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="next">Siguiente</string>
+    <string name="finish">Finalizar</string>
+
+    <!-- Setup Wizard -->
+    <string name="setup_title">Configuración Inicial</string>
+    <string name="budget_label">Presupuesto Total</string>
+    <string name="cycle_type_label">Ciclo de Presupuesto</string>
+    <string name="quincenal">Quincenal</string>
+    <string name="mensual">Mensual</string>
+    <string name="add_user">Agregar Usuario</string>
+    <string name="user_name_hint">Nombre del usuario</string>
+    <string name="contribution_percentage">Porcentaje de aporte</string>
+    <string name="error_sum_percentage">La suma de porcentajes debe ser exactamente 100%%</string>
+
+    <!-- Expenses -->
+    <string name="expenses_title">Gastos</string>
+    <string name="add_expense">Nuevo Gasto</string>
+    <string name="empty_expenses">No hay gastos registrados</string>
+    <string name="amount_hint">Monto</string>
+    <string name="concept_hint">Concepto</string>
+    <string name="category_label">Categoría</string>
+    <string name="recurrence_label">Recurrencia</string>
+    <string name="none">Ninguna</string>
+    <string name="daily">Diario</string>
+    <string name="weekly">Semanal</string>
+    <string name="monthly">Mensual</string>
+
+    <!-- Categories -->
+    <string name="cat_rent">Alquiler</string>
+    <string name="cat_food">Alimentación</string>
+    <string name="cat_services">Servicios</string>
+
+    <!-- Savings -->
+    <string name="savings_message">¡Has ahorrado %s!</string>
+
+    <!-- Navigation -->
+    <string name="nav_expenses">Gastos</string>
+    <string name="nav_calendar">Calendario</string>
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_settings">Ajustes</string>
+</resources>
