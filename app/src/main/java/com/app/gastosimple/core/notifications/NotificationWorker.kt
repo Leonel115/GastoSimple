@@ -24,11 +24,22 @@ class NotificationWorker(
     override suspend fun doWork(): Result {
         val expenses = dao.getRecurringExpenses().first()
         val calendar = Calendar.getInstance()
-        val today = calendar.get(Calendar.DAY_OF_MONTH)
+        val todayMillis = calendar.timeInMillis
 
         expenses.forEach { expense ->
             val expenseCal = Calendar.getInstance().apply { timeInMillis = expense.date }
-            if (expenseCal.get(Calendar.DAY_OF_MONTH) == today) {
+            val interval = expense.recurrenceInterval ?: 0
+            
+            if (interval > 0) {
+                val diffMillis = todayMillis - expenseCal.timeInMillis
+                val diffDays = (diffMillis / (1000 * 60 * 60 * 24)).toInt()
+                
+                // Notify on the day of recurrence
+                if (diffDays >= 0 && diffDays % interval == 0) {
+                    showNotification(expense.concept, expense.amount)
+                }
+            } else if (expenseCal.get(Calendar.DAY_OF_MONTH) == calendar.get(Calendar.DAY_OF_MONTH)) {
+                // Legacy monthly logic if interval not set
                 showNotification(expense.concept, expense.amount)
             }
         }

@@ -15,6 +15,7 @@ data class ExpensesUiState(
     val expenses: List<ExpenseEntity> = emptyList(),
     val users: List<UserEntity> = emptyList(),
     val isLoading: Boolean = true,
+    val isAddingExpense: Boolean = false,
     val remainingBudget: String = "0.0",
     val error: String? = null
 )
@@ -26,6 +27,9 @@ class ExpenseViewModel(
 
     private val _state = MutableStateFlow(ExpensesUiState())
     val state = _state.asStateFlow()
+
+    private val _expenseAddedEvent = MutableSharedFlow<Unit>()
+    val expenseAddedEvent = _expenseAddedEvent.asSharedFlow()
 
     init {
         loadData()
@@ -57,7 +61,17 @@ class ExpenseViewModel(
         }
     }
 
-    fun addExpense(amount: String, concept: String, category: String, userId: Long?, isShared: Boolean, recurrence: String) {
+    fun addExpense(
+        amount: String,
+        concept: String,
+        category: String,
+        userId: Long?,
+        isShared: Boolean,
+        recurrence: String,
+        recurrenceInterval: Int?
+    ) {
+        if (_state.value.isAddingExpense) return
+        
         val periodId = _state.value.activePeriod?.id ?: return
         val amountVal = amount.toBigDecimalOrNull() ?: BigDecimal.ZERO
         
@@ -72,20 +86,29 @@ class ExpenseViewModel(
             return
         }
 
+        _state.value = _state.value.copy(isAddingExpense = true, error = null)
+
         viewModelScope.launch {
-            repository.addExpense(
-                ExpenseEntity(
-                    amount = amount,
-                    concept = concept,
-                    category = category,
-                    userId = userId,
-                    isShared = isShared,
-                    date = Date().time,
-                    recurrence = recurrence,
-                    periodId = periodId
+            try {
+                repository.addExpense(
+                    ExpenseEntity(
+                        amount = amount,
+                        concept = concept,
+                        category = category,
+                        userId = userId,
+                        isShared = isShared,
+                        date = Date().time,
+                        recurrence = recurrence,
+                        recurrenceInterval = recurrenceInterval,
+                        periodId = periodId
+                    )
                 )
-            )
-            _state.value = _state.value.copy(error = null)
+                _expenseAddedEvent.emit(Unit)
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(error = "Error al guardar el gasto")
+            } finally {
+                _state.value = _state.value.copy(isAddingExpense = false)
+            }
         }
     }
 

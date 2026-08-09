@@ -19,6 +19,9 @@
     <string name="error_sum_percentage">La suma de porcentajes debe ser exactamente 100%%</string>
     <string name="single_user">Usuario Único</string>
     <string name="multi_user">Varios Usuarios</string>
+    <string name="budget_section">Presupuesto</string>
+    <string name="users_section">Usuarios y Aportes</string>
+    <string name="user_name_label">Nombre del Usuario</string>
 
     <!-- Expenses -->
     <string name="expenses_title">Gastos</string>

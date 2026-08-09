@@ -67,6 +67,14 @@ class SetupViewModel(
         }
     }
 
+    fun updateUserName(index: Int, newName: String) {
+        val currentUsers = _state.value.users.toMutableList()
+        if (index in currentUsers.indices) {
+            currentUsers[index] = currentUsers[index].copy(name = newName)
+            _state.value = _state.value.copy(users = currentUsers)
+        }
+    }
+
     fun finishSetup() {
         if (_state.value.isMultiUser) {
             val totalPercentage = _state.value.users.sumOf { it.contributionPercentage }

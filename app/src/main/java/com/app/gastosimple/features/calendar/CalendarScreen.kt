@@ -56,9 +56,34 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
 
                 items(daysInMonth) { day ->
                     val dayNum = day + 1
-                    val hasEvent = state.recurringExpenses.any {
-                        val cal = Calendar.getInstance().apply { timeInMillis = it.date }
-                        cal.get(Calendar.DAY_OF_MONTH) == dayNum
+                    
+                    // Logic to find projected events for this day
+                    val eventsForDay = state.recurringExpenses.filter { expense ->
+                        val expenseCal = Calendar.getInstance().apply { timeInMillis = expense.date }
+                        val interval = expense.recurrenceInterval ?: 0
+                        
+                        if (interval <= 0) {
+                            expenseCal.get(Calendar.DAY_OF_MONTH) == dayNum
+                        } else {
+                            val currentMonthCal = Calendar.getInstance().apply { 
+                                set(Calendar.DAY_OF_MONTH, dayNum)
+                            }
+                            
+                            val diffMillis = currentMonthCal.timeInMillis - expenseCal.timeInMillis
+                            val diffDays = (diffMillis / (1000 * 60 * 60 * 24)).toInt()
+                            
+                            diffDays >= 0 && diffDays % interval == 0
+                        }
+                    }
+
+                    val hasEvent = eventsForDay.isNotEmpty()
+                    val eventColor = when {
+                        eventsForDay.any { (it.recurrenceInterval ?: 0) in 16..31 } -> Color(0xFF0C17E1) // Blue
+                        eventsForDay.any { (it.recurrenceInterval ?: 0) in 8..15 } -> Color(0xFF00D4D4) // Cyan
+                        eventsForDay.any { (it.recurrenceInterval ?: 0) in 1..7 } -> Color(0xFFE91E63) // red(?) xd
+                        eventsForDay.any { (it.recurrenceInterval ?: 0) > 31 } -> Color(0xFFB928D2) // Purple
+                        hasEvent -> MaterialTheme.colorScheme.primary
+                        else -> Color.Transparent
                     }
 
                     Box(
@@ -72,7 +97,7 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
                             )
                             .border(
                                 1.dp,
-                                if (hasEvent) MaterialTheme.colorScheme.primary else Color.LightGray,
+                                if (hasEvent) eventColor else Color.LightGray,
                                 shape = MaterialTheme.shapes.small
                             )
                             .clickable { selectedDay = dayNum },
@@ -81,7 +106,7 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(dayNum.toString())
                             if (hasEvent) {
-                                Box(Modifier.size(4.dp).background(MaterialTheme.colorScheme.primary, MaterialTheme.shapes.extraSmall))
+                                Box(Modifier.size(4.dp).background(eventColor, MaterialTheme.shapes.extraSmall))
                             }
                         }
                     }
@@ -91,9 +116,20 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
             Spacer(Modifier.height(24.dp))
             Text("Gastos para el día seleccionado:", style = MaterialTheme.typography.titleMedium)
             
-            val dayExpenses = state.recurringExpenses.filter {
-                val cal = Calendar.getInstance().apply { timeInMillis = it.date }
-                cal.get(Calendar.DAY_OF_MONTH) == selectedDay
+            val dayExpenses = state.recurringExpenses.filter { expense ->
+                val expenseCal = Calendar.getInstance().apply { timeInMillis = expense.date }
+                val interval = expense.recurrenceInterval ?: 0
+                
+                if (interval <= 0) {
+                    expenseCal.get(Calendar.DAY_OF_MONTH) == selectedDay
+                } else {
+                    val currentMonthCal = Calendar.getInstance().apply { 
+                        set(Calendar.DAY_OF_MONTH, selectedDay ?: 0)
+                    }
+                    val diffMillis = currentMonthCal.timeInMillis - expenseCal.timeInMillis
+                    val diffDays = (diffMillis / (1000 * 60 * 60 * 24)).toInt()
+                    diffDays >= 0 && diffDays % interval == 0
+                }
             }
 
             if (selectedDay == null) {

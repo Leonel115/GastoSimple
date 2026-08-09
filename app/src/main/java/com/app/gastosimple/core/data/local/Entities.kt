@@ -21,6 +21,7 @@ data class ExpenseEntity(
     val isShared: Boolean = false,
     val date: Long,
     val recurrence: String, // "NONE", "DAILY", "WEEKLY", "MONTHLY"
+    val recurrenceInterval: Int? = null, // Days for recurrence (15, 30, etc)
     val periodId: Long // Link to a specific budget period
 )
 

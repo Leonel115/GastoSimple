@@ -17,7 +17,8 @@ val databaseModule = module {
             androidContext(),
             GastoSimpleDatabase::class.java,
             "gastosimple_db"
-        ).build()
+        ).fallbackToDestructiveMigration()
+            .build()
     }
     single { get<GastoSimpleDatabase>().dao() }
 }

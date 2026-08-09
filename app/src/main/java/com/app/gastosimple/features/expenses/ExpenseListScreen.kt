@@ -24,6 +24,12 @@ fun ExpenseListScreen(viewModel: ExpenseViewModel) {
     val state by viewModel.state.collectAsState()
     var showForm by remember { mutableStateOf(false) }
 
+    LaunchedEffect(Unit) {
+        viewModel.expenseAddedEvent.collect {
+            showForm = false
+        }
+    }
+
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(onClick = { showForm = true }) {
@@ -72,16 +78,15 @@ fun ExpenseListScreen(viewModel: ExpenseViewModel) {
             }
         }
     }
-    // ... rest of the code
 
     if (showForm) {
         ExpenseFormDialog(
             users = state.users,
             error = state.error,
-            onDismiss = { viewModel.clearError(); showForm = false },
-            onConfirm = { amount, concept, category, userId, isShared, recurrence ->
-                viewModel.addExpense(amount, concept, category, userId, isShared, recurrence)
-                if (state.error == null) showForm = false
+            isSaving = state.isAddingExpense,
+            onDismiss = { if (!state.isAddingExpense) { viewModel.clearError(); showForm = false } },
+            onConfirm = { amount, concept, category, userId, isShared, recurrence, interval ->
+                viewModel.addExpense(amount, concept, category, userId, isShared, recurrence, interval)
             }
         )
     }
@@ -111,15 +116,19 @@ fun ExpenseItem(expense: com.app.gastosimple.core.data.local.ExpenseEntity, user
 fun ExpenseFormDialog(
     users: List<com.app.gastosimple.core.data.local.UserEntity>,
     error: String?,
+    isSaving: Boolean,
     onDismiss: () -> Unit,
-    onConfirm: (String, String, String, Long?, Boolean, String) -> Unit
+    onConfirm: (String, String, String, Long?, Boolean, String, Int?) -> Unit
 ) {
     var amount by remember { mutableStateOf("") }
     var concept by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("Servicios") }
     var userId by remember { mutableStateOf<Long?>(users.firstOrNull()?.id) }
     var isShared by remember { mutableStateOf(false) }
-    var recurrence by remember { mutableStateOf("NONE") }
+    
+    var isRecurrent by remember { mutableStateOf(false) }
+    var recurrenceInterval by remember { mutableStateOf<Int?>(null) }
+    var customInterval by remember { mutableStateOf("") }
 
     val categories = listOf(
         stringResource(R.string.cat_services) to "Servicios",
@@ -128,6 +137,20 @@ fun ExpenseFormDialog(
         stringResource(R.string.cat_subscriptions) to "Suscripciones",
         stringResource(R.string.cat_other) to "Otros"
     )
+
+    // Quick presets for recurrence
+    val presets = when (category) {
+        "Alquiler" -> listOf(15, 20, 30)
+        "Suscripciones" -> listOf(30)
+        else -> listOf(7, 15, 30)
+    }
+
+    LaunchedEffect(category) {
+        if (category == "Suscripciones") {
+            isRecurrent = true
+            recurrenceInterval = 30
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -141,14 +164,21 @@ fun ExpenseFormDialog(
                         label = { Text(stringResource(R.string.amount_hint)) },
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
-                        isError = error != null
+                        isError = error != null,
+                        enabled = !isSaving
                     )
                     if (error != null) {
                         Text(error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                     }
                 }
                 item {
-                    OutlinedTextField(value = concept, onValueChange = { concept = it }, label = { Text(stringResource(R.string.concept_hint)) }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(
+                        value = concept, 
+                        onValueChange = { concept = it }, 
+                        label = { Text(stringResource(R.string.concept_hint)) }, 
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isSaving
+                    )
                 }
                 item {
                     Text(stringResource(R.string.category_label), style = MaterialTheme.typography.labelLarge)
@@ -156,24 +186,81 @@ fun ExpenseFormDialog(
                         categories.forEach { (label, value) ->
                             FilterChip(
                                 selected = category == value,
-                                onClick = { category = value },
-                                label = { Text(label) }
+                                onClick = { if (!isSaving) category = value },
+                                label = { Text(label) },
+                                enabled = !isSaving
                             )
                         }
                     }
                 }
+                
+                // Flexible Recurrence
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("¿Es un gasto recurrente?", style = MaterialTheme.typography.bodyMedium)
+                        Switch(
+                            checked = isRecurrent,
+                            onCheckedChange = { if (!isSaving) isRecurrent = it },
+                            enabled = !isSaving && category != "Suscripciones"
+                        )
+                    }
+                }
+
+                if (isRecurrent) {
+                    item {
+                        Text("Plazo de pago (días)", style = MaterialTheme.typography.labelLarge)
+                        FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            presets.forEach { days ->
+                                FilterChip(
+                                    selected = recurrenceInterval == days,
+                                    onClick = { 
+                                        recurrenceInterval = days
+                                        customInterval = days.toString()
+                                    },
+                                    label = { Text("$days días") },
+                                    enabled = !isSaving
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = customInterval,
+                            onValueChange = { 
+                                customInterval = it
+                                recurrenceInterval = it.toIntOrNull()
+                            },
+                            label = { Text("Días personalizados") },
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                            enabled = !isSaving
+                        )
+                    }
+                }
+
                 if (users.size > 1) {
                     item {
                         Text(stringResource(R.string.payer_label), style = MaterialTheme.typography.labelLarge)
                         Column {
                             users.forEach { user ->
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    RadioButton(selected = !isShared && userId == user.id, onClick = { isShared = false; userId = user.id })
+                                    RadioButton(
+                                        selected = !isShared && userId == user.id, 
+                                        onClick = { if (!isSaving) { isShared = false; userId = user.id } },
+                                        enabled = !isSaving
+                                    )
                                     Text(user.name)
                                 }
                             }
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                RadioButton(selected = isShared, onClick = { isShared = true; userId = null })
+                                RadioButton(
+                                    selected = isShared, 
+                                    onClick = { if (!isSaving) { isShared = true; userId = null } },
+                                    enabled = !isSaving
+                                )
                                 Text(stringResource(R.string.shared_expense))
                             }
                         }
@@ -182,12 +269,29 @@ fun ExpenseFormDialog(
             }
         },
         confirmButton = {
-            Button(onClick = { onConfirm(amount, concept, category, userId, isShared, recurrence) }) {
-                Text(stringResource(R.string.save))
+            Button(
+                onClick = { 
+                    onConfirm(
+                        amount, 
+                        concept, 
+                        category, 
+                        userId, 
+                        isShared, 
+                        if (isRecurrent) "PERIODIC" else "NONE", 
+                        if (isRecurrent) recurrenceInterval else null
+                    ) 
+                },
+                enabled = !isSaving
+            ) {
+                if (isSaving) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
+                } else {
+                    Text(stringResource(R.string.save))
+                }
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, enabled = !isSaving) {
                 Text(stringResource(R.string.cancel))
             }
         }
