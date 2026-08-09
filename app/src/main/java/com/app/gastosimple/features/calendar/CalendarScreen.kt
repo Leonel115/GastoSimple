@@ -25,6 +25,7 @@ import java.util.*
 fun CalendarScreen(viewModel: CalendarViewModel) {
     val state by viewModel.state.collectAsState()
     val calendar = Calendar.getInstance()
+    val currentDayOfMonth = calendar.get(Calendar.DAY_OF_MONTH)
     val daysInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
     calendar.set(Calendar.DAY_OF_MONTH, 1)
     val firstDayOfWeek = calendar.get(Calendar.DAY_OF_WEEK) - 1
@@ -57,30 +58,40 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
                 items(daysInMonth) { day ->
                     val dayNum = day + 1
                     
-                    // Logic to find projected events for this day
                     val eventsForDay = state.recurringExpenses.filter { expense ->
-                        val expenseCal = Calendar.getInstance().apply { timeInMillis = expense.date }
+                        val expenseCal = Calendar.getInstance().apply { 
+                            timeInMillis = expense.date 
+                            set(Calendar.HOUR_OF_DAY, 0)
+                            set(Calendar.MINUTE, 0)
+                            set(Calendar.SECOND, 0)
+                            set(Calendar.MILLISECOND, 0)
+                        }
                         val interval = expense.recurrenceInterval ?: 0
                         
+                        val currentMonthCal = Calendar.getInstance().apply { 
+                            set(Calendar.DAY_OF_MONTH, dayNum)
+                            set(Calendar.HOUR_OF_DAY, 0)
+                            set(Calendar.MINUTE, 0)
+                            set(Calendar.SECOND, 0)
+                            set(Calendar.MILLISECOND, 0)
+                        }
+                        
                         if (interval <= 0) {
-                            expenseCal.get(Calendar.DAY_OF_MONTH) == dayNum
+                            expenseCal.get(Calendar.YEAR) == currentMonthCal.get(Calendar.YEAR) &&
+                            expenseCal.get(Calendar.DAY_OF_YEAR) == currentMonthCal.get(Calendar.DAY_OF_YEAR)
                         } else {
-                            val currentMonthCal = Calendar.getInstance().apply { 
-                                set(Calendar.DAY_OF_MONTH, dayNum)
-                            }
-                            
                             val diffMillis = currentMonthCal.timeInMillis - expenseCal.timeInMillis
                             val diffDays = (diffMillis / (1000 * 60 * 60 * 24)).toInt()
-                            
                             diffDays >= 0 && diffDays % interval == 0
                         }
                     }
 
                     val hasEvent = eventsForDay.isNotEmpty()
                     val eventColor = when {
+                        eventsForDay.size > 1 -> Color(0xFF4CAF50) // Green for multiple events
                         eventsForDay.any { (it.recurrenceInterval ?: 0) in 16..31 } -> Color(0xFF0C17E1) // Blue
                         eventsForDay.any { (it.recurrenceInterval ?: 0) in 8..15 } -> Color(0xFF00D4D4) // Cyan
-                        eventsForDay.any { (it.recurrenceInterval ?: 0) in 1..7 } -> Color(0xFFE91E63) // red(?) xd
+                        eventsForDay.any { (it.recurrenceInterval ?: 0) in 1..7 } -> Color(0xFFE91E63) // Pink/Red
                         eventsForDay.any { (it.recurrenceInterval ?: 0) > 31 } -> Color(0xFFB928D2) // Purple
                         hasEvent -> MaterialTheme.colorScheme.primary
                         else -> Color.Transparent
@@ -116,16 +127,28 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
             Spacer(Modifier.height(24.dp))
             Text("Gastos para el día seleccionado:", style = MaterialTheme.typography.titleMedium)
             
-            val dayExpenses = state.recurringExpenses.filter { expense ->
-                val expenseCal = Calendar.getInstance().apply { timeInMillis = expense.date }
+            val dayExpenses = if (selectedDay == null) emptyList() else state.recurringExpenses.filter { expense ->
+                val expenseCal = Calendar.getInstance().apply { 
+                    timeInMillis = expense.date 
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
                 val interval = expense.recurrenceInterval ?: 0
                 
+                val currentMonthCal = Calendar.getInstance().apply { 
+                    set(Calendar.DAY_OF_MONTH, selectedDay ?: 0)
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+                
                 if (interval <= 0) {
-                    expenseCal.get(Calendar.DAY_OF_MONTH) == selectedDay
+                    expenseCal.get(Calendar.YEAR) == currentMonthCal.get(Calendar.YEAR) &&
+                    expenseCal.get(Calendar.DAY_OF_YEAR) == currentMonthCal.get(Calendar.DAY_OF_YEAR)
                 } else {
-                    val currentMonthCal = Calendar.getInstance().apply { 
-                        set(Calendar.DAY_OF_MONTH, selectedDay ?: 0)
-                    }
                     val diffMillis = currentMonthCal.timeInMillis - expenseCal.timeInMillis
                     val diffDays = (diffMillis / (1000 * 60 * 60 * 24)).toInt()
                     diffDays >= 0 && diffDays % interval == 0

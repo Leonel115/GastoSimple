@@ -141,14 +141,14 @@ fun ExpenseFormDialog(
     // Quick presets for recurrence
     val presets = when (category) {
         "Alquiler" -> listOf(15, 20, 30)
-        "Suscripciones" -> listOf(30)
+        "Suscripciones" -> listOf(15, 30)
         else -> listOf(7, 15, 30)
     }
 
     LaunchedEffect(category) {
-        if (category == "Suscripciones") {
+        if (category == "Suscripciones" || category == "Alquiler" || category == "Servicios") {
             isRecurrent = true
-            recurrenceInterval = 30
+            if (recurrenceInterval == null) recurrenceInterval = 30
         }
     }
 
@@ -205,7 +205,7 @@ fun ExpenseFormDialog(
                         Switch(
                             checked = isRecurrent,
                             onCheckedChange = { if (!isSaving) isRecurrent = it },
-                            enabled = !isSaving && category != "Suscripciones"
+                            enabled = !isSaving && category != "Suscripciones" && category != "Alquiler" && category != "Servicios"
                         )
                     }
                 }
