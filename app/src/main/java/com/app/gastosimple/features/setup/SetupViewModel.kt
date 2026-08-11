@@ -51,9 +51,11 @@ class SetupViewModel(
 
     fun onMultiUserChange(isMulti: Boolean) {
         val newUsers = if (isMulti) {
-            _state.value.users
+            // Si cambia a multi-usuario, reseteamos a todos a 0% para configuración manual
+            _state.value.users.map { it.copy(contributionPercentage = 0.0) }
         } else {
-            listOf(UserEntity(name = "Usuario Principal", contributionPercentage = 100.0))
+            // Si vuelve a usuario único, el principal retoma el 100%
+            listOf(_state.value.users.first().copy(contributionPercentage = 100.0))
         }
         _state.value = _state.value.copy(isMultiUser = isMulti, users = newUsers)
     }
