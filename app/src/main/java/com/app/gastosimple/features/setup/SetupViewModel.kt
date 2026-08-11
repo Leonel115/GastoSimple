@@ -97,11 +97,24 @@ class SetupViewModel(
                 _state.value = _state.value.copy(error = "La suma de porcentajes debe ser exactamente 100%")
                 return
             }
+            if (_state.value.users.any { it.name.isBlank() }) {
+                _state.value = _state.value.copy(error = "Todos los usuarios deben tener un nombre")
+                return
+            }
         } else {
+            if (_state.value.users.first().name.isBlank()) {
+                _state.value = _state.value.copy(error = "El nombre de usuario no puede estar vacío")
+                return
+            }
             // Ensure 100% for single user
             val currentUsers = _state.value.users.toMutableList()
             currentUsers[0] = currentUsers[0].copy(contributionPercentage = 100.0)
             _state.value = _state.value.copy(users = currentUsers)
+        }
+
+        if (_state.value.budget.isBlank()) {
+            _state.value = _state.value.copy(error = "El presupuesto no puede estar vacío")
+            return
         }
 
         if (_state.value.budget.toDoubleOrNull() == null || _state.value.budget.toDouble() <= 0) {

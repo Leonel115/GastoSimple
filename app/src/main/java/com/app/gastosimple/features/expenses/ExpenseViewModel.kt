@@ -88,6 +88,12 @@ class ExpenseViewModel(
         if (_state.value.isAddingExpense) return
         
         val periodId = _state.value.activePeriod?.id ?: return
+
+        if (concept.isBlank()) {
+            _state.value = _state.value.copy(error = "El concepto no puede estar vacío")
+            return
+        }
+
         val amountVal = amount.toBigDecimalOrNull() ?: BigDecimal.ZERO
         
         if (amountVal <= BigDecimal.ZERO) {
@@ -137,6 +143,11 @@ class ExpenseViewModel(
         newRecurrence: String,
         newRecurrenceInterval: Int?
     ) {
+        if (newConcept.isBlank()) {
+            _state.value = _state.value.copy(error = "El concepto no puede estar vacío")
+            return
+        }
+
         val isResetDay = isResetDayForExpense(expense)
         
         viewModelScope.launch {

@@ -240,10 +240,10 @@ fun ExpenseFormDialog(
                         label = { Text(stringResource(R.string.amount_hint)) },
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
-                        isError = error != null,
+                        isError = error != null && error.contains("monto", ignoreCase = true),
                         enabled = !isSaving
                     )
-                    if (error != null) {
+                    if (error != null && error.contains("monto", ignoreCase = true)) {
                         Text(error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                     }
                 }
@@ -253,8 +253,12 @@ fun ExpenseFormDialog(
                         onValueChange = { concept = it }, 
                         label = { Text(stringResource(R.string.concept_hint)) }, 
                         modifier = Modifier.fillMaxWidth(),
+                        isError = error != null && error.contains("concepto", ignoreCase = true),
                         enabled = !isSaving
                     )
+                    if (error != null && error.contains("concepto", ignoreCase = true)) {
+                        Text(error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    }
                 }
                 item {
                     var expanded by remember { mutableStateOf(false) }
@@ -422,6 +426,7 @@ fun BudgetEditDialog(
     onConfirm: (String) -> Unit
 ) {
     var amount by remember { mutableStateOf(currentPlanned) }
+    val isValid = amount.isNotBlank() && (amount.toDoubleOrNull() ?: 0.0) > 0
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -436,12 +441,19 @@ fun BudgetEditDialog(
                     label = { Text("Nuevo presupuesto total") },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
-                    prefix = { Text("$ ") }
+                    prefix = { Text("$ ") },
+                    isError = amount.isNotBlank() && !isValid
                 )
+                if (amount.isNotBlank() && !isValid) {
+                    Text("Ingrese un monto válido mayor a 0", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                }
             }
         },
         confirmButton = {
-            Button(onClick = { onConfirm(amount) }) {
+            Button(
+                onClick = { onConfirm(amount) },
+                enabled = isValid
+            ) {
                 Text("Planear")
             }
         },
