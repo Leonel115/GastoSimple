@@ -23,6 +23,12 @@ interface GastoSimpleDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertExpense(expense: ExpenseEntity): Unit
 
+    @Update
+    suspend fun updateExpense(expense: ExpenseEntity): Unit
+
+    @androidx.room.Delete
+    suspend fun deleteExpense(expense: ExpenseEntity): Unit
+
     @Query("SELECT * FROM expenses WHERE periodId = :periodId ORDER BY date DESC")
     fun getExpensesByPeriod(periodId: Long): Flow<List<ExpenseEntity>>
 

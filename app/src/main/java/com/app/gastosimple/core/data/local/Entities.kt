@@ -20,9 +20,14 @@ data class ExpenseEntity(
     val userId: Long?, // Nullable if isShared is true
     val isShared: Boolean = false,
     val date: Long,
-    val recurrence: String, // "NONE", "DAILY", "WEEKLY", "MONTHLY"
+    val recurrence: String, // "NONE", "DAILY", "WEEKLY", "MONTHLY", "PERIODIC"
     val recurrenceInterval: Int? = null, // Days for recurrence (15, 30, etc)
-    val periodId: Long // Link to a specific budget period
+    val periodId: Long, // Link to a specific budget period
+
+    // Diferido / Pending Changes
+    val pendingAmount: String? = null,
+    val pendingRecurrenceInterval: Int? = null,
+    val isPendingDeletion: Boolean = false
 )
 
 @Entity(tableName = "budget_periods")

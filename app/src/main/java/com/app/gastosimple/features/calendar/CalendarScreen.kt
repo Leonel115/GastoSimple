@@ -112,12 +112,15 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
 
                         val isPastDay = targetDayCal.before(todayCal)
                         
-                        // Lógica de Reset
-                        val isResetDay = state.activePeriod?.let { period ->
+                        // Lógica de Reset - Solo para hoy y futuro
+                        val isResetDay = if (isPastDay) false else state.activePeriod?.let { period ->
                             val periodStartCal = Calendar.getInstance().apply { 
                                 timeInMillis = period.startDate 
                                 set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
                             }
+                            // No marcar resets antes de que empiece el periodo real
+                            if (targetDayCal.before(periodStartCal)) return@let false
+                            
                             if (period.cycleType == "MENSUAL") {
                                 targetDayCal.get(Calendar.DAY_OF_MONTH) == periodStartCal.get(Calendar.DAY_OF_MONTH)
                             } else {
@@ -127,7 +130,7 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
                             }
                         } ?: false
 
-                        val eventsForDay = state.recurringExpenses.filter { expense ->
+                        val eventsForDay = if (isPastDay) emptyList() else state.recurringExpenses.filter { expense ->
                             val expenseCal = Calendar.getInstance().apply { 
                                 timeInMillis = expense.date 
                                 set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)

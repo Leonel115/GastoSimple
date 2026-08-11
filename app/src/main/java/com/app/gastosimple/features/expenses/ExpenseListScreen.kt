@@ -1,18 +1,26 @@
 package com.app.gastosimple.features.expenses
 
+import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.app.gastosimple.R
+import com.app.gastosimple.core.data.local.ExpenseEntity
+import com.app.gastosimple.core.ui.theme.CyanBlue
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -23,16 +31,28 @@ import androidx.compose.foundation.layout.FlowRow
 fun ExpenseListScreen(viewModel: ExpenseViewModel) {
     val state by viewModel.state.collectAsState()
     var showForm by remember { mutableStateOf(false) }
+    var selectedExpense by remember { mutableStateOf<ExpenseEntity?>(null) }
+    var showBudgetDialog by remember { mutableStateOf(false) }
+    
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.expenseAddedEvent.collect {
             showForm = false
+            selectedExpense = null
+        }
+    }
+
+    LaunchedEffect(state.infoMessage) {
+        state.infoMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+            viewModel.clearError()
         }
     }
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(onClick = { showForm = true }) {
+            FloatingActionButton(onClick = { showForm = true }, containerColor = CyanBlue, contentColor = Color.Black) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_expense))
             }
         }
@@ -44,13 +64,28 @@ fun ExpenseListScreen(viewModel: ExpenseViewModel) {
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text(stringResource(R.string.budget_label), style = MaterialTheme.typography.labelLarge)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(stringResource(R.string.budget_label), style = MaterialTheme.typography.labelLarge)
+                            Spacer(Modifier.width(8.dp))
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = "Editar",
+                                tint = CyanBlue,
+                                modifier = Modifier.size(16.dp).clickable { showBudgetDialog = true }
+                            )
+                        }
                         Text("$${it.totalBudget}", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                        
+                        state.plannedBudget?.let { planned ->
+                            Text("Próximo presupuesto: $$planned", style = MaterialTheme.typography.labelSmall, color = CyanBlue)
+                        }
+
                         Spacer(Modifier.height(8.dp))
                         Text("Saldo Restante", style = MaterialTheme.typography.labelLarge)
+                        val remainingVal = state.remainingBudget.toDoubleOrNull() ?: 0.0
                         Text("$${state.remainingBudget}", 
                             style = MaterialTheme.typography.titleLarge, 
-                            color = if ((state.remainingBudget.toDoubleOrNull() ?: 0.0) < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                            color = if (remainingVal < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -72,7 +107,10 @@ fun ExpenseListScreen(viewModel: ExpenseViewModel) {
                 ) {
                     items(state.expenses) { expense ->
                         val userName = if (expense.isShared) stringResource(R.string.shared_expense) else state.users.find { it.id == expense.userId }?.name ?: "Unknown"
-                        ExpenseItem(expense, userName)
+                        ExpenseItem(expense, userName) {
+                            selectedExpense = expense
+                            showForm = true
+                        }
                     }
                 }
             }
@@ -84,21 +122,58 @@ fun ExpenseListScreen(viewModel: ExpenseViewModel) {
             users = state.users,
             error = state.error,
             isSaving = state.isAddingExpense,
-            onDismiss = { if (!state.isAddingExpense) { viewModel.clearError(); showForm = false } },
+            existingExpense = selectedExpense,
+            onDismiss = { 
+                if (!state.isAddingExpense) { 
+                    viewModel.clearError()
+                    showForm = false
+                    selectedExpense = null
+                } 
+            },
             onConfirm = { amount, concept, category, userId, isShared, recurrence, interval ->
-                viewModel.addExpense(amount, concept, category, userId, isShared, recurrence, interval)
+                if (selectedExpense == null) {
+                    viewModel.addExpense(amount, concept, category, userId, isShared, recurrence, interval)
+                } else {
+                    viewModel.editExpense(selectedExpense!!, amount, concept, category, userId, isShared, recurrence, interval)
+                }
+            },
+            onDelete = {
+                selectedExpense?.let { viewModel.deleteExpense(it) }
+            }
+        )
+    }
+
+    if (showBudgetDialog) {
+        BudgetEditDialog(
+            currentPlanned = state.plannedBudget ?: state.activePeriod?.totalBudget ?: "",
+            onDismiss = { showBudgetDialog = false },
+            onConfirm = { 
+                viewModel.updatePlannedBudget(it)
+                showBudgetDialog = false
             }
         )
     }
 }
 
 @Composable
-fun ExpenseItem(expense: com.app.gastosimple.core.data.local.ExpenseEntity, userName: String) {
+fun ExpenseItem(expense: ExpenseEntity, userName: String, onClick: () -> Unit) {
     val dateFormat = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault())
-    Card(modifier = Modifier.fillMaxWidth()) {
+    val isPending = expense.pendingAmount != null || expense.pendingRecurrenceInterval != null || expense.isPendingDeletion
+    
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable { onClick() }
+    ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(expense.concept, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(expense.concept, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    if (isPending) {
+                        Spacer(Modifier.width(8.dp))
+                        Surface(color = CyanBlue.copy(alpha = 0.1f), shape = CircleShape) {
+                            Text("Pendiente", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), color = CyanBlue)
+                        }
+                    }
+                }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(expense.category, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
                     Text(" • ", style = MaterialTheme.typography.bodySmall)
@@ -106,7 +181,7 @@ fun ExpenseItem(expense: com.app.gastosimple.core.data.local.ExpenseEntity, user
                 }
                 Text(dateFormat.format(Date(expense.date)), style = MaterialTheme.typography.bodySmall)
             }
-            Text("$${expense.amount}", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+            Text("$${expense.amount}", style = MaterialTheme.typography.titleLarge, color = if (expense.isPendingDeletion) Color.Gray else MaterialTheme.colorScheme.primary)
         }
     }
 }
@@ -117,18 +192,20 @@ fun ExpenseFormDialog(
     users: List<com.app.gastosimple.core.data.local.UserEntity>,
     error: String?,
     isSaving: Boolean,
+    existingExpense: ExpenseEntity? = null,
     onDismiss: () -> Unit,
-    onConfirm: (String, String, String, Long?, Boolean, String, Int?) -> Unit
+    onConfirm: (String, String, String, Long?, Boolean, String, Int?) -> Unit,
+    onDelete: () -> Unit
 ) {
-    var amount by remember { mutableStateOf("") }
-    var concept by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf("Servicios") }
-    var userId by remember { mutableStateOf<Long?>(users.firstOrNull()?.id) }
-    var isShared by remember { mutableStateOf(false) }
+    var amount by remember { mutableStateOf(existingExpense?.amount ?: "") }
+    var concept by remember { mutableStateOf(existingExpense?.concept ?: "") }
+    var category by remember { mutableStateOf(existingExpense?.category ?: "Servicios") }
+    var userId by remember { mutableStateOf<Long?>(existingExpense?.userId ?: users.firstOrNull()?.id) }
+    var isShared by remember { mutableStateOf(existingExpense?.isShared ?: false) }
     
-    var isRecurrent by remember { mutableStateOf(false) }
-    var recurrenceInterval by remember { mutableStateOf<Int?>(null) }
-    var customInterval by remember { mutableStateOf("") }
+    var isRecurrent by remember { mutableStateOf(existingExpense?.recurrence != "NONE" && existingExpense?.recurrence != null) }
+    var recurrenceInterval by remember { mutableStateOf<Int?>(existingExpense?.recurrenceInterval) }
+    var customInterval by remember { mutableStateOf(existingExpense?.recurrenceInterval?.toString() ?: "") }
 
     val categories = listOf(
         stringResource(R.string.cat_services) to "Servicios",
@@ -138,7 +215,6 @@ fun ExpenseFormDialog(
         stringResource(R.string.cat_other) to "Otros"
     )
 
-    // Quick presets for recurrence
     val presets = when (category) {
         "Alquiler" -> listOf(15, 20, 30)
         "Suscripciones" -> listOf(15, 30)
@@ -154,7 +230,7 @@ fun ExpenseFormDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.add_expense)) },
+        title = { Text(if (existingExpense == null) stringResource(R.string.add_expense) else "Editar Gasto") },
         text = {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 item {
@@ -194,7 +270,6 @@ fun ExpenseFormDialog(
                     }
                 }
                 
-                // Flexible Recurrence
                 item {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -266,6 +341,19 @@ fun ExpenseFormDialog(
                         }
                     }
                 }
+                
+                if (existingExpense != null) {
+                    item {
+                        TextButton(
+                            onClick = onDelete,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                            enabled = !isSaving
+                        ) {
+                            Text("Eliminar Gasto")
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
@@ -292,6 +380,44 @@ fun ExpenseFormDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss, enabled = !isSaving) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
+}
+
+@Composable
+fun BudgetEditDialog(
+    currentPlanned: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var amount by remember { mutableStateOf(currentPlanned) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Editar Presupuesto") },
+        text = {
+            Column {
+                Text("El cambio se aplicará en el próximo ciclo.", style = MaterialTheme.typography.bodySmall, color = CyanBlue)
+                Spacer(Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = amount,
+                    onValueChange = { amount = it },
+                    label = { Text("Nuevo presupuesto total") },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
+                    prefix = { Text("$ ") }
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = { onConfirm(amount) }) {
+                Text("Planear")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.cancel))
             }
         }

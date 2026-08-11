@@ -7,11 +7,14 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
 
+import org.koin.core.logger.Level
+
 class GastoSimpleApp : Application() {
     override fun onCreate() {
         super.onCreate()
         startKoin {
-            androidLogger()
+            // Desactivamos el logger de Android que puede causar crashes en el arranque
+            // androidLogger(Level.ERROR) 
             androidContext(this@GastoSimpleApp)
             modules(appModule, databaseModule)
         }

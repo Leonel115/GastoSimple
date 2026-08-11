@@ -17,7 +17,7 @@ val databaseModule = module {
             androidContext(),
             GastoSimpleDatabase::class.java,
             "gastosimple_db"
-        ).fallbackToDestructiveMigration()
+        ).fallbackToDestructiveMigration(dropAllTables = true)
             .build()
     }
     single { get<GastoSimpleDatabase>().dao() }
@@ -28,6 +28,6 @@ val appModule = module {
     single { ExpenseRepository(get()) }
     
     viewModel { SetupViewModel(get(), get()) }
-    viewModel { ExpenseViewModel(get(), get()) }
+    viewModel { ExpenseViewModel(get(), get(), get()) }
     viewModel { CalendarViewModel(get()) }
 }
