@@ -85,7 +85,7 @@ fun ExpenseListScreen(viewModel: ExpenseViewModel) {
                         val remainingVal = state.remainingBudget.toDoubleOrNull() ?: 0.0
                         Text("$${state.remainingBudget}", 
                             style = MaterialTheme.typography.titleLarge, 
-                            color = if (remainingVal < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                            color = if (remainingVal < 0) MaterialTheme.colorScheme.error else Color.White
                         )
                     }
                 }
@@ -257,15 +257,44 @@ fun ExpenseFormDialog(
                     )
                 }
                 item {
-                    Text(stringResource(R.string.category_label), style = MaterialTheme.typography.labelLarge)
-                    FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        categories.forEach { (label, value) ->
-                            FilterChip(
-                                selected = category == value,
-                                onClick = { if (!isSaving) category = value },
-                                label = { Text(label) },
-                                enabled = !isSaving
-                            )
+                    var expanded by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(
+                        expanded = expanded,
+                        onExpandedChange = { if (!isSaving) expanded = it },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        OutlinedTextField(
+                            value = categories.find { it.second == category }?.first ?: category,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text(stringResource(R.string.category_label)) },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = CyanBlue,
+                                unfocusedBorderColor = Color.Gray.copy(alpha = 0.5f),
+                                focusedLabelColor = CyanBlue,
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.LightGray
+                            ),
+                            enabled = !isSaving
+                        )
+                        ExposedDropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            categories.forEach { (label, value) ->
+                                DropdownMenuItem(
+                                    text = { Text(label) },
+                                    onClick = {
+                                        category = value
+                                        expanded = false
+                                    },
+                                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                                )
+                            }
                         }
                     }
                 }
