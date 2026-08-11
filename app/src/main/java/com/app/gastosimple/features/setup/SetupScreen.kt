@@ -1,6 +1,7 @@
 package com.app.gastosimple.features.setup
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -43,7 +44,7 @@ fun SetupScreen(viewModel: SetupViewModel, onFinished: () -> Unit) {
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(LightCoolBlue, Color.White)
+                    colors = listOf(MidnightBlue, DeepMidnight)
                 )
             )
     ) {
@@ -60,12 +61,13 @@ fun SetupScreen(viewModel: SetupViewModel, onFinished: () -> Unit) {
                 AnimatedContent(
                     targetState = state.currentStep,
                     transitionSpec = {
+                        val duration = 400
                         if (targetState > initialState) {
-                            (slideInHorizontally(animationSpec = tween(300)) { it } + fadeIn()).togetherWith(
-                                slideOutHorizontally(animationSpec = tween(300)) { -it } + fadeOut())
+                            (slideInHorizontally(animationSpec = tween(duration, easing = FastOutSlowInEasing)) { it } + fadeIn(tween(duration))).togetherWith(
+                                slideOutHorizontally(animationSpec = tween(duration, easing = FastOutSlowInEasing)) { -it } + fadeOut(tween(duration)))
                         } else {
-                            (slideInHorizontally(animationSpec = tween(300)) { -it } + fadeIn()).togetherWith(
-                                slideOutHorizontally(animationSpec = tween(300)) { it } + fadeOut())
+                            (slideInHorizontally(animationSpec = tween(duration, easing = FastOutSlowInEasing)) { -it } + fadeIn(tween(duration))).togetherWith(
+                                slideOutHorizontally(animationSpec = tween(duration, easing = FastOutSlowInEasing)) { it } + fadeOut(tween(duration)))
                         }
                     },
                     label = "SetupStepAnimation"
@@ -84,7 +86,7 @@ fun SetupScreen(viewModel: SetupViewModel, onFinished: () -> Unit) {
                         2 -> OnboardingPage(
                             title = stringResource(R.string.saving_title),
                             description = stringResource(R.string.saving_desc),
-                            icon = Icons.Default.Star // Changed to Star for safety
+                            icon = Icons.Default.Star
                         )
                         3 -> BudgetStep(
                             budget = state.budget,
@@ -134,7 +136,7 @@ fun SetupProgressHeader(
     ) {
         if (showBack) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = CoolBlue)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = CyanBlue)
             }
         } else {
             Spacer(Modifier.size(48.dp))
@@ -146,7 +148,7 @@ fun SetupProgressHeader(
                     modifier = Modifier
                         .size(if (index == currentStep) 12.dp else 8.dp)
                         .clip(CircleShape)
-                        .background(if (index == currentStep) CoolBlue else CoolBlue.copy(alpha = 0.3f))
+                        .background(if (index == currentStep) CyanBlue else CoolBlue.copy(alpha = 0.3f))
                 )
             }
         }
@@ -171,7 +173,7 @@ fun OnboardingPage(
         Surface(
             modifier = Modifier.size(120.dp),
             shape = CircleShape,
-            color = SoftCyan
+            color = DeepCoolBlue.copy(alpha = 0.4f)
         ) {
             Icon(
                 imageVector = icon,
@@ -179,7 +181,7 @@ fun OnboardingPage(
                 modifier = Modifier
                     .padding(24.dp)
                     .fillMaxSize(),
-                tint = CoolBlue
+                tint = CyanBlue
             )
         }
         Spacer(Modifier.height(32.dp))
@@ -187,14 +189,14 @@ fun OnboardingPage(
             text = title,
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            color = CoolBlue,
+            color = OffWhite,
             textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(16.dp))
         Text(
             text = description,
             style = MaterialTheme.typography.bodyLarge,
-            color = MediumGray,
+            color = LightCoolBlue,
             textAlign = TextAlign.Center,
             lineHeight = 24.sp
         )
@@ -219,38 +221,57 @@ fun BudgetStep(
             text = "Define tu Presupuesto",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            color = CoolBlue
+            color = CyanBlue
         )
         
-        OutlinedCard(
+        Card(
             modifier = Modifier.fillMaxWidth(),
             shape = MaterialTheme.shapes.large,
-            colors = CardDefaults.outlinedCardColors(containerColor = Color.White)
+            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f))
         ) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 OutlinedTextField(
                     value = budget,
                     onValueChange = onBudgetChange,
-                    label = { Text(stringResource(R.string.budget_label)) },
+                    label = { Text(stringResource(R.string.budget_label), color = LightCoolBlue) },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    prefix = { Text("$", color = CoolBlue) },
-                    shape = MaterialTheme.shapes.medium
+                    prefix = { Text("$", color = CyanBlue) },
+                    shape = MaterialTheme.shapes.medium,
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        focusedTextColor = PureWhite,
+                        unfocusedTextColor = OffWhite,
+                        focusedBorderColor = CyanBlue,
+                        unfocusedBorderColor = CoolBlue.copy(alpha = 0.5f),
+                        cursorColor = CyanBlue
+                    )
                 )
 
-                Text(stringResource(R.string.cycle_type_label), style = MaterialTheme.typography.labelLarge)
+                Text(stringResource(R.string.cycle_type_label), style = MaterialTheme.typography.labelLarge, color = LightCoolBlue)
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                     SegmentedButton(
                         selected = cycleType == "MENSUAL",
                         onClick = { onCycleChange("MENSUAL") },
-                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
+                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                        colors = SegmentedButtonDefaults.colors(
+                            activeContainerColor = CyanBlue,
+                            activeContentColor = MidnightBlue,
+                            inactiveContainerColor = Color.Transparent,
+                            inactiveContentColor = LightCoolBlue
+                        )
                     ) {
                         Text(stringResource(R.string.mensual))
                     }
                     SegmentedButton(
                         selected = cycleType == "QUINCENAL",
                         onClick = { onCycleChange("QUINCENAL") },
-                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
+                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                        colors = SegmentedButtonDefaults.colors(
+                            activeContainerColor = CyanBlue,
+                            activeContentColor = MidnightBlue,
+                            inactiveContainerColor = Color.Transparent,
+                            inactiveContentColor = LightCoolBlue
+                        )
                     ) {
                         Text(stringResource(R.string.quincenal))
                     }
@@ -284,7 +305,7 @@ fun UsersStep(
                 text = "Participantes",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                color = CoolBlue
+                color = CyanBlue
             )
         }
 
@@ -293,14 +314,26 @@ fun UsersStep(
                 SegmentedButton(
                     selected = !isMultiUser,
                     onClick = { onMultiUserChange(false) },
-                    shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
+                    shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                    colors = SegmentedButtonDefaults.colors(
+                        activeContainerColor = CyanBlue,
+                        activeContentColor = MidnightBlue,
+                        inactiveContainerColor = Color.Transparent,
+                        inactiveContentColor = LightCoolBlue
+                    )
                 ) {
                     Text(stringResource(R.string.single_user))
                 }
                 SegmentedButton(
                     selected = isMultiUser,
                     onClick = { onMultiUserChange(true) },
-                    shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
+                    shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                    colors = SegmentedButtonDefaults.colors(
+                        activeContainerColor = CyanBlue,
+                        activeContentColor = MidnightBlue,
+                        inactiveContainerColor = Color.Transparent,
+                        inactiveContentColor = LightCoolBlue
+                    )
                 ) {
                     Text(stringResource(R.string.multi_user))
                 }
@@ -312,16 +345,24 @@ fun UsersStep(
                 OutlinedTextField(
                     value = users[0].name,
                     onValueChange = { onUpdateName(0, it) },
-                    label = { Text("Tu nombre") },
+                    label = { Text("Tu nombre", color = LightCoolBlue) },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.medium
+                    shape = MaterialTheme.shapes.medium,
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        focusedTextColor = PureWhite,
+                        unfocusedTextColor = OffWhite,
+                        focusedBorderColor = CyanBlue,
+                        unfocusedBorderColor = CoolBlue.copy(alpha = 0.5f),
+                        cursorColor = CyanBlue
+                    )
                 )
             }
         } else {
             itemsIndexed(users) { index, user ->
-                OutlinedCard(
+                Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.medium
+                    shape = MaterialTheme.shapes.medium,
+                    colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f))
                 ) {
                     Row(
                         modifier = Modifier.padding(12.dp),
@@ -331,17 +372,31 @@ fun UsersStep(
                         OutlinedTextField(
                             value = user.name,
                             onValueChange = { onUpdateName(index, it) },
-                            label = { Text("Nombre") },
+                            label = { Text("Nombre", color = LightCoolBlue) },
                             modifier = Modifier.weight(1.5f),
-                            shape = MaterialTheme.shapes.small
+                            shape = MaterialTheme.shapes.small,
+                            colors = TextFieldDefaults.outlinedTextFieldColors(
+                                focusedTextColor = PureWhite,
+                                unfocusedTextColor = OffWhite,
+                                focusedBorderColor = CyanBlue,
+                                unfocusedBorderColor = CoolBlue.copy(alpha = 0.5f),
+                                cursorColor = CyanBlue
+                            )
                         )
                         OutlinedTextField(
                             value = if (user.contributionPercentage == 0.0) "" else user.contributionPercentage.toString(),
                             onValueChange = { val p = it.toDoubleOrNull() ?: 0.0; onUpdatePercentage(index, p) },
-                            label = { Text("%") },
+                            label = { Text("%", color = LightCoolBlue) },
                             modifier = Modifier.weight(1f),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            shape = MaterialTheme.shapes.small
+                            shape = MaterialTheme.shapes.small,
+                            colors = TextFieldDefaults.outlinedTextFieldColors(
+                                focusedTextColor = PureWhite,
+                                unfocusedTextColor = OffWhite,
+                                focusedBorderColor = CyanBlue,
+                                unfocusedBorderColor = CoolBlue.copy(alpha = 0.5f),
+                                cursorColor = CyanBlue
+                            )
                         )
                         if (users.size > 1) {
                             IconButton(onClick = { onRemoveUser(index) }) {
@@ -361,9 +416,16 @@ fun UsersStep(
                     OutlinedTextField(
                         value = newUserName,
                         onValueChange = { newUserName = it },
-                        label = { Text("Nuevo usuario") },
+                        label = { Text("Nuevo usuario", color = LightCoolBlue) },
                         modifier = Modifier.weight(1f),
-                        shape = MaterialTheme.shapes.medium
+                        shape = MaterialTheme.shapes.medium,
+                        colors = TextFieldDefaults.outlinedTextFieldColors(
+                            focusedTextColor = PureWhite,
+                            unfocusedTextColor = OffWhite,
+                            focusedBorderColor = CyanBlue,
+                            unfocusedBorderColor = CoolBlue.copy(alpha = 0.5f),
+                            cursorColor = CyanBlue
+                        )
                     )
                     FilledIconButton(
                         onClick = {
@@ -372,7 +434,7 @@ fun UsersStep(
                                 newUserName = ""
                             }
                         },
-                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = CoolBlue)
+                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = CyanBlue, contentColor = MidnightBlue)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                     }
@@ -409,7 +471,7 @@ fun SetupFooter(
                 .fillMaxWidth()
                 .height(56.dp),
             shape = MaterialTheme.shapes.large,
-            colors = ButtonDefaults.buttonColors(containerColor = CoolBlue)
+            colors = ButtonDefaults.buttonColors(containerColor = CyanBlue, contentColor = MidnightBlue)
         ) {
             Text(
                 text = if (currentStep < 4) "Siguiente" else stringResource(R.string.finish),
