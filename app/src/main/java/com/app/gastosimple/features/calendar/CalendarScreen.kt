@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -110,6 +111,21 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
                         }
 
                         val isPastDay = targetDayCal.before(todayCal)
+                        
+                        // Lógica de Reset
+                        val isResetDay = state.activePeriod?.let { period ->
+                            val periodStartCal = Calendar.getInstance().apply { 
+                                timeInMillis = period.startDate 
+                                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                            }
+                            if (period.cycleType == "MENSUAL") {
+                                targetDayCal.get(Calendar.DAY_OF_MONTH) == periodStartCal.get(Calendar.DAY_OF_MONTH)
+                            } else {
+                                val diffMillis = targetDayCal.timeInMillis - periodStartCal.timeInMillis
+                                val diffDays = (diffMillis / (1000 * 60 * 60 * 24)).toInt()
+                                diffDays >= 0 && diffDays % 15 == 0
+                            }
+                        } ?: false
 
                         val eventsForDay = state.recurringExpenses.filter { expense ->
                             val expenseCal = Calendar.getInstance().apply { 
@@ -149,7 +165,12 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
                                 )
                                 .border(
                                     1.dp,
-                                    if (hasEvent) eventColor else Color.LightGray.copy(alpha = 0.5f),
+                                    if (hasEvent && isResetDay) eventColor else if (hasEvent) eventColor else Color.LightGray.copy(alpha = 0.5f),
+                                    shape = MaterialTheme.shapes.small
+                                )
+                                .border(
+                                    if (hasEvent && isResetDay) 2.dp else 0.dp,
+                                    if (hasEvent && isResetDay) eventColor else Color.Transparent,
                                     shape = MaterialTheme.shapes.small
                                 )
                                 .clickable { selectedDay = dayNum },
@@ -165,7 +186,14 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
                                         else -> MaterialTheme.colorScheme.onSurface
                                     }
                                 )
-                                if (hasEvent) {
+                                if (isResetDay) {
+                                    Icon(
+                                        imageVector = Icons.Default.Star,
+                                        contentDescription = "Reset",
+                                        tint = Color.Yellow,
+                                        modifier = Modifier.size(12.dp)
+                                    )
+                                } else if (hasEvent) {
                                     Box(Modifier.size(4.dp).background(eventColor, MaterialTheme.shapes.extraSmall))
                                 }
                             }
