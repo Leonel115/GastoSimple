@@ -16,6 +16,7 @@ data class SetupState(
     val cycleType: String = "MENSUAL",
     val isMultiUser: Boolean = false,
     val users: List<UserEntity> = listOf(UserEntity(name = "Usuario Principal", contributionPercentage = 100.0)),
+    val currentStep: Int = 0, // 0-2: Onboarding, 3: Budget, 4: Users
     val isFinished: Boolean = false,
     val error: String? = null
 )
@@ -27,6 +28,18 @@ class SetupViewModel(
 
     private val _state = MutableStateFlow(SetupState())
     val state = _state.asStateFlow()
+
+    fun nextStep() {
+        if (_state.value.currentStep < 4) {
+            _state.value = _state.value.copy(currentStep = _state.value.currentStep + 1, error = null)
+        }
+    }
+
+    fun previousStep() {
+        if (_state.value.currentStep > 0) {
+            _state.value = _state.value.copy(currentStep = _state.value.currentStep - 1, error = null)
+        }
+    }
 
     fun onBudgetChange(newBudget: String) {
         _state.value = _state.value.copy(budget = newBudget)

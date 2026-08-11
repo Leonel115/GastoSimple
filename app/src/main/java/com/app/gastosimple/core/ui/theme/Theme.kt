@@ -16,22 +16,42 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = CoolBlue,
+    onPrimary = OffWhite,
+    primaryContainer = DeepCoolBlue,
+    onPrimaryContainer = PureWhite,
+    secondary = CyanBlue,
+    onSecondary = MidnightBlue,
+    background = MidnightBlue,
+    onBackground = OffWhite,
+    surface = MidnightBlue,
+    onSurface = OffWhite,
+    surfaceVariant = DarkGray,
+    onSurfaceVariant = LightGray,
+    error = ErrorRed
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    primary = CoolBlue,
+    onPrimary = PureWhite,
+    primaryContainer = LightCoolBlue,
+    onPrimaryContainer = DeepCoolBlue,
+    secondary = CyanBlue,
+    onSecondary = PureWhite,
+    background = PureWhite,
+    onBackground = DarkGray,
+    surface = OffWhite,
+    onSurface = DarkGray,
+    surfaceVariant = LightCoolBlue,
+    onSurfaceVariant = DeepCoolBlue,
+    error = ErrorRed
 )
 
 @Composable
 fun GastoSimpleTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false, // Disabled for a more consistent brand identity
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {

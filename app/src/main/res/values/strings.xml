@@ -6,6 +6,19 @@
     <string name="next">Siguiente</string>
     <string name="finish">Finalizar</string>
 
+    <!-- Onboarding -->
+    <string name="welcome_title">¡Bienvenido a GastoSimple!</string>
+    <string name="welcome_desc">La forma más sencilla de tomar el control de tu dinero sin complicaciones.</string>
+
+    <string name="explain_title">¿Cómo funciona?</string>
+    <string name="explain_desc">Registra tus gastos diarios y visualiza cuánto presupuesto te queda para el resto del mes.</string>
+
+    <string name="saving_title">Planifica y Ahorra</string>
+    <string name="saving_desc">Configura tus gastos fijos (alquiler, servicios) y recibe alertas para que nunca te tome por sorpresa.</string>
+
+    <string name="get_started">Comenzar</string>
+    <string name="back">Atrás</string>
+
     <!-- Setup Wizard -->
     <string name="setup_title">Configuración Inicial</string>
     <string name="budget_label">Presupuesto Total</string>
