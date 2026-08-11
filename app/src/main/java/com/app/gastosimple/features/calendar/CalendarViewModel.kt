@@ -5,9 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.app.gastosimple.core.data.local.BudgetPeriodEntity
 import com.app.gastosimple.core.data.local.ExpenseEntity
 import com.app.gastosimple.core.data.local.GastoSimpleDao
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
@@ -19,37 +17,37 @@ data class CalendarUiState(
 )
 
 class CalendarViewModel(private val dao: GastoSimpleDao) : ViewModel() {
-    private val _state = MutableStateFlow(CalendarUiState())
-    val state = _state.asStateFlow()
-
-    init {
-        viewModelScope.launch {
-            combine(
-                dao.getRecurringExpenses(),
-                dao.getActivePeriod()
-            ) { expenses, period ->
-                _state.value.copy(
-                    recurringExpenses = expenses,
-                    activePeriod = period,
-                    isLoading = false
-                )
-            }.collect {
-                _state.value = it
-            }
-        }
-    }
+    
+    private val _displayedDate = MutableStateFlow(Calendar.getInstance())
+    
+    val state: StateFlow<CalendarUiState> = combine(
+        dao.getRecurringExpenses(),
+        dao.getActivePeriod(),
+        _displayedDate
+    ) { expenses, period, displayedDate ->
+        CalendarUiState(
+            recurringExpenses = expenses,
+            activePeriod = period,
+            displayedDate = displayedDate,
+            isLoading = false
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = CalendarUiState()
+    )
 
     fun nextMonth() {
-        val newDate = (_state.value.displayedDate.clone() as Calendar).apply {
+        val newDate = (state.value.displayedDate.clone() as Calendar).apply {
             add(Calendar.MONTH, 1)
         }
-        _state.value = _state.value.copy(displayedDate = newDate)
+        _displayedDate.value = newDate
     }
 
     fun previousMonth() {
-        val newDate = (_state.value.displayedDate.clone() as Calendar).apply {
+        val newDate = (state.value.displayedDate.clone() as Calendar).apply {
             add(Calendar.MONTH, -1)
         }
-        _state.value = _state.value.copy(displayedDate = newDate)
+        _displayedDate.value = newDate
     }
 }
