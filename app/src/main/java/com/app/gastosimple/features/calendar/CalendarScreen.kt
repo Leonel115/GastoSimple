@@ -100,17 +100,23 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
                     items(daysInMonth) { day ->
                         val dayNum = day + 1
                         
+                        val todayCal = Calendar.getInstance().apply { 
+                            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                        }
+                        
+                        val targetDayCal = (state.displayedDate.clone() as Calendar).apply { 
+                            set(Calendar.DAY_OF_MONTH, dayNum)
+                            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                        }
+
+                        val isPastDay = targetDayCal.before(todayCal)
+
                         val eventsForDay = state.recurringExpenses.filter { expense ->
                             val expenseCal = Calendar.getInstance().apply { 
                                 timeInMillis = expense.date 
                                 set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
                             }
                             val interval = expense.recurrenceInterval ?: 0
-                            
-                            val targetDayCal = (state.displayedDate.clone() as Calendar).apply { 
-                                set(Calendar.DAY_OF_MONTH, dayNum)
-                                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-                            }
                             
                             if (interval <= 0) {
                                 expenseCal.timeInMillis == targetDayCal.timeInMillis
@@ -123,6 +129,7 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
 
                         val hasEvent = eventsForDay.isNotEmpty()
                         val eventColor = when {
+                            isPastDay -> Color.Gray
                             eventsForDay.size > 1 -> Color(0xFF4CAF50) // Green
                             eventsForDay.any { (it.recurrenceInterval ?: 0) in 16..31 } -> Color(0xFF0C17E1) // Blue
                             eventsForDay.any { (it.recurrenceInterval ?: 0) in 8..15 } -> Color(0xFF00D4D4) // Cyan
@@ -152,7 +159,11 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
                                 Text(
                                     text = dayNum.toString(),
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = if (hasEvent) eventColor else MaterialTheme.colorScheme.onSurface
+                                    color = when {
+                                        isPastDay -> Color.Gray
+                                        hasEvent -> eventColor
+                                        else -> MaterialTheme.colorScheme.onSurface
+                                    }
                                 )
                                 if (hasEvent) {
                                     Box(Modifier.size(4.dp).background(eventColor, MaterialTheme.shapes.extraSmall))
