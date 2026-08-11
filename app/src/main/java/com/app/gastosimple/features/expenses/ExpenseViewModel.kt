@@ -188,9 +188,40 @@ class ExpenseViewModel(
     }
 
     fun updatePlannedBudget(amount: String) {
+        val period = _state.value.activePeriod
+        val isResetDay = if (period != null) isResetDayForPeriod(period) else true
+        
         viewModelScope.launch {
-            prefs.setPlannedBudget(amount)
-            _state.value = _state.value.copy(infoMessage = "Presupuesto agendado para el próximo ciclo")
+            if (isResetDay && period != null) {
+                dao.updatePeriod(period.copy(totalBudget = amount))
+                _state.value = _state.value.copy(infoMessage = "Presupuesto actualizado para el periodo actual")
+            } else {
+                prefs.setPlannedBudget(amount)
+                _state.value = _state.value.copy(infoMessage = "Presupuesto agendado para el próximo ciclo")
+            }
+            _expenseAddedEvent.emit(Unit)
+        }
+    }
+
+    private fun isResetDayForPeriod(period: BudgetPeriodEntity): Boolean {
+        val calendar = Calendar.getInstance()
+        val todayMillis = calendar.apply { 
+            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) 
+        }.timeInMillis
+        
+        val startCal = Calendar.getInstance().apply { 
+            timeInMillis = period.startDate
+            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+        }
+        
+        if (startCal.timeInMillis == todayMillis) return true
+        
+        if (period.cycleType == "MENSUAL") {
+            return calendar.get(Calendar.DAY_OF_MONTH) == startCal.get(Calendar.DAY_OF_MONTH)
+        } else {
+            val diffMillis = todayMillis - startCal.timeInMillis
+            val diffDays = (diffMillis / (1000 * 60 * 60 * 24)).toInt()
+            return diffDays >= 0 && diffDays % 15 == 0
         }
     }
 
