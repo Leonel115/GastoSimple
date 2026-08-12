@@ -169,7 +169,9 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
                                     if (hasEvent && isResetDay) eventColor else if (hasEvent) eventColor else Color.LightGray.copy(alpha = 0.5f),
                                     shape = MaterialTheme.shapes.small
                                 )
-                                .clickable { selectedDay = dayNum },
+                                .clickable { 
+                                    selectedDay = if (selectedDay == dayNum) null else dayNum 
+                                },
                             contentAlignment = Alignment.Center
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
