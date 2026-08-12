@@ -202,7 +202,10 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
             HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
             Spacer(Modifier.height(8.dp))
 
-            Text("Detalles del día seleccionado:", style = MaterialTheme.typography.titleMedium)
+            if (selectedDay != null) {
+                Text("Detalles del día seleccionado:", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(8.dp))
+            }
             
             val selectedDayExpenses = if (selectedDay == null) emptyList() else {
                 val targetDayMillis = (state.displayedDate.clone() as Calendar).apply { 
@@ -228,9 +231,7 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
             }
 
             if (selectedDay == null) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Selecciona un día para ver los detalles.", color = Color.Gray)
-                }
+                CalendarLegend()
             } else if (selectedDayExpenses.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("No hay gastos programados para este día.", color = Color.Gray)
@@ -255,6 +256,41 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
                 }
             }
         }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun CalendarLegend() {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text("Guía de Colores", style = MaterialTheme.typography.titleMedium, color = Color.White.copy(alpha = 0.8f))
+        Spacer(Modifier.height(12.dp))
+        
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            LegendItem(icon = { Icon(Icons.Default.Star, null, tint = Color.Yellow, modifier = Modifier.size(16.dp)) }, label = "Inicio de Ciclo")
+            LegendItem(color = Color(0xFF4CAF50), label = "Múltiples Gastos")
+            LegendItem(color = Color(0xFF0C17E1), label = "Mensual (16-31 días)")
+            LegendItem(color = Color(0xFF00D4D4), label = "Quincenal (8-15 días)")
+            LegendItem(color = Color(0xFFE91E63), label = "Corto (1-7 días)")
+            LegendItem(color = Color(0xFFB928D2), label = "Largo (mayor a 31 días)")
+        }
+    }
+}
+
+@Composable
+fun LegendItem(color: Color? = null, icon: (@Composable () -> Unit)? = null, label: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        if (icon != null) {
+            icon()
+        } else if (color != null) {
+            Box(Modifier.size(14.dp).background(color, MaterialTheme.shapes.extraSmall))
+        }
+        Spacer(Modifier.width(8.dp))
+        Text(label, style = MaterialTheme.typography.bodySmall, color = Color.LightGray)
     }
 }
 
