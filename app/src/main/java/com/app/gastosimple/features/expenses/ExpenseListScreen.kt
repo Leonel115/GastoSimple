@@ -43,9 +43,9 @@ fun ExpenseListScreen(viewModel: ExpenseViewModel) {
         }
     }
 
-    LaunchedEffect(state.infoMessage) {
-        state.infoMessage?.let {
-            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+    LaunchedEffect(state.infoResId) {
+        state.infoResId?.let {
+            Toast.makeText(context, context.getString(it), Toast.LENGTH_LONG).show()
             viewModel.clearError()
         }
     }
@@ -69,7 +69,7 @@ fun ExpenseListScreen(viewModel: ExpenseViewModel) {
                             Spacer(Modifier.width(8.dp))
                             Icon(
                                 Icons.Default.Edit,
-                                contentDescription = "Editar",
+                                contentDescription = stringResource(R.string.edit),
                                 tint = CyanBlue,
                                 modifier = Modifier.size(16.dp).clickable { showBudgetDialog = true }
                             )
@@ -77,11 +77,15 @@ fun ExpenseListScreen(viewModel: ExpenseViewModel) {
                         Text("$${it.totalBudget}", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                         
                         state.plannedBudget?.let { planned ->
-                            Text("Próximo presupuesto: $$planned", style = MaterialTheme.typography.labelSmall, color = CyanBlue)
+                            Text(
+                                stringResource(R.string.planned_budget_info, planned),
+                                style = MaterialTheme.typography.labelSmall, 
+                                color = CyanBlue
+                            )
                         }
 
                         Spacer(Modifier.height(8.dp))
-                        Text("Saldo Restante", style = MaterialTheme.typography.labelLarge)
+                        Text(stringResource(R.string.remaining_budget), style = MaterialTheme.typography.labelLarge)
                         val remainingVal = state.remainingBudget.toDoubleOrNull() ?: 0.0
                         Text("$${state.remainingBudget}", 
                             style = MaterialTheme.typography.titleLarge, 
@@ -106,7 +110,7 @@ fun ExpenseListScreen(viewModel: ExpenseViewModel) {
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(state.expenses) { expense ->
-                        val userName = if (expense.isShared) stringResource(R.string.shared_expense) else state.users.find { it.id == expense.userId }?.name ?: "Unknown"
+                        val userName = if (expense.isShared) stringResource(R.string.shared_expense) else state.users.find { it.id == expense.userId }?.name ?: stringResource(R.string.unknown)
                         ExpenseItem(expense, userName) {
                             selectedExpense = expense
                             showForm = true
@@ -120,7 +124,8 @@ fun ExpenseListScreen(viewModel: ExpenseViewModel) {
     if (showForm) {
         ExpenseFormDialog(
             users = state.users,
-            error = state.error,
+            errorResId = state.errorResId,
+            errorParam = state.errorParam,
             isSaving = state.isAddingExpense,
             existingExpense = selectedExpense,
             onDismiss = { 
@@ -170,12 +175,24 @@ fun ExpenseItem(expense: ExpenseEntity, userName: String, onClick: () -> Unit) {
                     if (isPending) {
                         Spacer(Modifier.width(8.dp))
                         Surface(color = CyanBlue.copy(alpha = 0.1f), shape = CircleShape) {
-                            Text("Pendiente", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), color = CyanBlue)
+                            Text(
+                                stringResource(R.string.pending_tag), 
+                                style = MaterialTheme.typography.labelSmall, 
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), 
+                                color = CyanBlue
+                            )
                         }
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(expense.category, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
+                    val categoryLabel = when(expense.category) {
+                        "Alquiler" -> stringResource(R.string.cat_rent)
+                        "Alimentación" -> stringResource(R.string.cat_food)
+                        "Servicios" -> stringResource(R.string.cat_services)
+                        "Suscripciones" -> stringResource(R.string.cat_subscriptions)
+                        else -> stringResource(R.string.cat_other)
+                    }
+                    Text(categoryLabel, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
                     Text(" • ", style = MaterialTheme.typography.bodySmall)
                     Text(userName, style = MaterialTheme.typography.bodySmall)
                 }
@@ -190,7 +207,8 @@ fun ExpenseItem(expense: ExpenseEntity, userName: String, onClick: () -> Unit) {
 @Composable
 fun ExpenseFormDialog(
     users: List<com.app.gastosimple.core.data.local.UserEntity>,
-    error: String?,
+    errorResId: Int?,
+    errorParam: String?,
     isSaving: Boolean,
     existingExpense: ExpenseEntity? = null,
     onDismiss: () -> Unit,
@@ -230,34 +248,40 @@ fun ExpenseFormDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (existingExpense == null) stringResource(R.string.add_expense) else "Editar Gasto") },
+        title = { Text(if (existingExpense == null) stringResource(R.string.add_expense) else stringResource(R.string.edit_expense)) },
         text = {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 item {
+                    val isAmountError = errorResId == R.string.err_invalid_amount || errorResId == R.string.err_insufficient_budget
                     OutlinedTextField(
                         value = amount,
                         onValueChange = { amount = it },
                         label = { Text(stringResource(R.string.amount_hint)) },
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
-                        isError = error != null && error.contains("monto", ignoreCase = true),
+                        isError = isAmountError,
                         enabled = !isSaving
                     )
-                    if (error != null && error.contains("monto", ignoreCase = true)) {
-                        Text(error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    if (isAmountError && errorResId != null) {
+                        Text(
+                            text = if (errorParam != null) stringResource(errorResId, errorParam) else stringResource(errorResId),
+                            color = MaterialTheme.colorScheme.error, 
+                            style = MaterialTheme.typography.bodySmall
+                        )
                     }
                 }
                 item {
+                    val isConceptError = errorResId == R.string.err_empty_concept
                     OutlinedTextField(
                         value = concept, 
                         onValueChange = { concept = it }, 
                         label = { Text(stringResource(R.string.concept_hint)) }, 
                         modifier = Modifier.fillMaxWidth(),
-                        isError = error != null && error.contains("concepto", ignoreCase = true),
+                        isError = isConceptError,
                         enabled = !isSaving
                     )
-                    if (error != null && error.contains("concepto", ignoreCase = true)) {
-                        Text(error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    if (isConceptError && errorResId != null) {
+                        Text(stringResource(errorResId), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                     }
                 }
                 item {
@@ -309,7 +333,7 @@ fun ExpenseFormDialog(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("¿Es un gasto recurrente?", style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(R.string.is_recurrent_label), style = MaterialTheme.typography.bodyMedium)
                         Switch(
                             checked = isRecurrent,
                             onCheckedChange = { if (!isSaving) isRecurrent = it },
@@ -320,7 +344,7 @@ fun ExpenseFormDialog(
 
                 if (isRecurrent) {
                     item {
-                        Text("Plazo de pago (días)", style = MaterialTheme.typography.labelLarge)
+                        Text(stringResource(R.string.recurrence_interval_label), style = MaterialTheme.typography.labelLarge)
                         FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             presets.forEach { days ->
                                 FilterChip(
@@ -329,7 +353,7 @@ fun ExpenseFormDialog(
                                         recurrenceInterval = days
                                         customInterval = days.toString()
                                     },
-                                    label = { Text("$days días") },
+                                    label = { Text(stringResource(R.string.days_suffix, days)) },
                                     enabled = !isSaving
                                 )
                             }
@@ -341,7 +365,7 @@ fun ExpenseFormDialog(
                                 customInterval = it
                                 recurrenceInterval = it.toIntOrNull()
                             },
-                            label = { Text("Días personalizados") },
+                            label = { Text(stringResource(R.string.custom_days_hint)) },
                             modifier = Modifier.fillMaxWidth(),
                             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
                             enabled = !isSaving
@@ -383,7 +407,7 @@ fun ExpenseFormDialog(
                             colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
                             enabled = !isSaving
                         ) {
-                            Text("Eliminar Gasto")
+                            Text(stringResource(R.string.delete_expense))
                         }
                     }
                 }
@@ -430,22 +454,22 @@ fun BudgetEditDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Editar Presupuesto") },
+        title = { Text(stringResource(R.string.edit_expense)) }, // Or new string
         text = {
             Column {
-                Text("El cambio se aplicará en el próximo ciclo.", style = MaterialTheme.typography.bodySmall, color = CyanBlue)
+                Text(stringResource(R.string.msg_budget_planned), style = MaterialTheme.typography.bodySmall, color = CyanBlue)
                 Spacer(Modifier.height(16.dp))
                 OutlinedTextField(
                     value = amount,
                     onValueChange = { amount = it },
-                    label = { Text("Nuevo presupuesto total") },
+                    label = { Text(stringResource(R.string.setup_budget_title)) },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
                     prefix = { Text("$ ") },
                     isError = amount.isNotBlank() && !isValid
                 )
                 if (amount.isNotBlank() && !isValid) {
-                    Text("Ingrese un monto válido mayor a 0", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(R.string.err_invalid_budget), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                 }
             }
         },
@@ -454,7 +478,7 @@ fun BudgetEditDialog(
                 onClick = { onConfirm(amount) },
                 enabled = isValid
             ) {
-                Text("Planear")
+                Text(stringResource(R.string.save))
             }
         },
         dismissButton = {

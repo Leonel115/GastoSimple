@@ -61,10 +61,10 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
                 title = { Text(stringResource(R.string.nav_calendar)) },
                 actions = {
                     IconButton(onClick = { viewModel.previousMonth() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Mes Anterior")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.cal_header_prev))
                     }
                     IconButton(onClick = { viewModel.nextMonth() }) {
-                        Icon(Icons.Default.ArrowForward, contentDescription = "Mes Siguiente")
+                        Icon(Icons.Default.ArrowForward, contentDescription = stringResource(R.string.cal_header_next))
                     }
                 }
             )
@@ -187,7 +187,7 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
                                 if (isResetDay) {
                                     Icon(
                                         imageVector = Icons.Default.Star,
-                                        contentDescription = "Reset",
+                                        contentDescription = stringResource(R.string.cal_legend_reset),
                                         tint = Color.Yellow,
                                         modifier = Modifier.size(12.dp)
                                     )
@@ -205,7 +205,7 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
             Spacer(Modifier.height(8.dp))
 
             if (selectedDay != null) {
-                Text("Detalles del día seleccionado:", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.cal_details_title), style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
             }
             
@@ -236,7 +236,7 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
                 CalendarLegend()
             } else if (selectedDayExpenses.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No hay gastos programados para este día.", color = Color.Gray)
+                    Text(stringResource(R.string.cal_no_events), color = Color.Gray)
                 }
             } else {
                 LazyColumn(
@@ -249,7 +249,14 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
                             Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
                                     Text(expense.concept, fontWeight = FontWeight.Bold)
-                                    Text(expense.category, style = MaterialTheme.typography.bodySmall)
+                                    val categoryLabel = when(expense.category) {
+                                        "Alquiler" -> stringResource(R.string.cat_rent)
+                                        "Alimentación" -> stringResource(R.string.cat_food)
+                                        "Servicios" -> stringResource(R.string.cat_services)
+                                        "Suscripciones" -> stringResource(R.string.cat_subscriptions)
+                                        else -> stringResource(R.string.cat_other)
+                                    }
+                                    Text(categoryLabel, style = MaterialTheme.typography.bodySmall)
                                 }
                                 Text("$${expense.amount}", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.titleMedium)
                             }
@@ -265,7 +272,7 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
 @Composable
 fun CalendarLegend() {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text("Guía de Colores", style = MaterialTheme.typography.titleMedium, color = Color.White.copy(alpha = 0.8f))
+        Text(stringResource(R.string.cal_legend_title), style = MaterialTheme.typography.titleMedium, color = Color.White.copy(alpha = 0.8f))
         Spacer(Modifier.height(12.dp))
         
         FlowRow(
@@ -273,12 +280,12 @@ fun CalendarLegend() {
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            LegendItem(icon = { Icon(Icons.Default.Star, null, tint = Color.Yellow, modifier = Modifier.size(16.dp)) }, label = "Inicio de Ciclo")
-            LegendItem(color = Color(0xFF4CAF50), label = "Múltiples Gastos")
-            LegendItem(color = Color(0xFF0C17E1), label = "Mensual (16-31 días)")
-            LegendItem(color = Color(0xFF00D4D4), label = "Quincenal (8-15 días)")
-            LegendItem(color = Color(0xFFE91E63), label = "Corto (1-7 días)")
-            LegendItem(color = Color(0xFFB928D2), label = "Largo (mayor a 31 días)")
+            LegendItem(icon = { Icon(Icons.Default.Star, null, tint = Color.Yellow, modifier = Modifier.size(16.dp)) }, label = stringResource(R.string.cal_legend_reset))
+            LegendItem(color = Color(0xFF4CAF50), label = stringResource(R.string.cal_legend_multi))
+            LegendItem(color = Color(0xFF0C17E1), label = stringResource(R.string.cal_legend_monthly))
+            LegendItem(color = Color(0xFF00D4D4), label = stringResource(R.string.cal_legend_biweekly))
+            LegendItem(color = Color(0xFFE91E63), label = stringResource(R.string.cal_legend_weekly))
+            LegendItem(color = Color(0xFFB928D2), label = stringResource(R.string.cal_legend_long))
         }
     }
 }

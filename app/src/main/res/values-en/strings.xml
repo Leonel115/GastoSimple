@@ -1,0 +1,111 @@
+<resources>
+    <string name="app_name">GastoSimple</string>
+
+    <!-- Common -->
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="next">Next</string>
+    <string name="continue_label">Continue</string>
+    <string name="back">Back</string>
+    <string name="finish">Finish</string>
+    <string name="edit">Edit</string>
+    <string name="delete">Delete</string>
+    <string name="unknown">Unknown</string>
+
+    <!-- Onboarding -->
+    <string name="welcome_title">Welcome to GastoSimple!</string>
+    <string name="welcome_desc">The simplest way to take control of your money without complications.</string>
+    <string name="explain_title">How it works?</string>
+    <string name="explain_desc">Record your daily expenses and visualize how much budget you have left for the rest of the month.</string>
+    <string name="saving_title">Plan and Save</string>
+    <string name="saving_desc">Configure your fixed expenses (rent, services) and receive alerts so you are never caught by surprise.</string>
+    <string name="get_started">Get Started</string>
+
+    <!-- Setup Wizard -->
+    <string name="setup_title">Initial Setup</string>
+    <string name="budget_section">Budget</string>
+    <string name="budget_label">Total Budget</string>
+    <string name="setup_budget_title">Define your Budget</string>
+    <string name="cycle_type_label">Budget Cycle</string>
+    <string name="quincenal">Biweekly</string>
+    <string name="mensual">Monthly</string>
+
+    <string name="users_section">Users and Contributions</string>
+    <string name="users_setup_title">Manage Participants</string>
+    <string name="single_user">Single User</string>
+    <string name="multi_user">Multiple Users</string>
+    <string name="user_name_label">User Name</string>
+    <string name="user_name_hint">User name</string>
+    <string name="add_user">Add User</string>
+    <string name="remove_user">Remove</string>
+    <string name="contribution_percentage">Contribution percentage</string>
+    <string name="total_contributions">Total Contributions: %s%%</string>
+
+    <!-- Expenses -->
+    <string name="expenses_title">Expenses</string>
+    <string name="add_expense">New Expense</string>
+    <string name="edit_expense">Edit Expense</string>
+    <string name="delete_expense">Delete Expense</string>
+    <string name="empty_expenses">No expenses recorded</string>
+    <string name="amount_hint">Amount</string>
+    <string name="concept_hint">Concept</string>
+    <string name="category_label">Category</string>
+    <string name="payer_label">Payer</string>
+    <string name="shared_expense">Shared Expense</string>
+    <string name="remaining_budget">Remaining Balance</string>
+    <string name="planned_budget_info">Next budget: $%s</string>
+    <string name="pending_tag">Pending</string>
+
+    <!-- Recurrence -->
+    <string name="is_recurrent_label">Is it a recurring expense?</string>
+    <string name="recurrence_interval_label">Payment term (days)</string>
+    <string name="custom_days_hint">Custom days</string>
+    <string name="days_suffix">%s days</string>
+    <string name="one_time_expense">One-time expense</string>
+    <string name="fixed_monthly">Fixed: Monthly (30 days)</string>
+
+    <!-- Calendar -->
+    <string name="cal_header_prev">Previous Month</string>
+    <string name="cal_header_next">Next Month</string>
+    <string name="cal_details_title">Details of the selected day:</string>
+    <string name="cal_no_events">No expenses scheduled for this day.</string>
+    <string name="cal_select_day_hint">Select a day to see details.</string>
+    <string name="cal_legend_title">Color Guide</string>
+    <string name="cal_legend_reset">Cycle Start</string>
+    <string name="cal_legend_multi">Multiple Expenses</string>
+    <string name="cal_legend_monthly">Monthly (16-31 days)</string>
+    <string name="cal_legend_biweekly">Biweekly (8-15 days)</string>
+    <string name="cal_legend_weekly">Short (1-7 days)</string>
+    <string name="cal_legend_long">Long (more than 31 days)</string>
+
+    <!-- Error & Info Messages -->
+    <string name="err_empty_concept">Concept cannot be empty</string>
+    <string name="err_invalid_amount">Amount must be greater than 0</string>
+    <string name="err_insufficient_budget">Amount exceeds remaining budget ($%s)</string>
+    <string name="err_save_expense">Error saving expense</string>
+    <string name="err_empty_user_name">User name cannot be empty</string>
+    <string name="err_multi_user_empty_name">All users must have a name</string>
+    <string name="err_invalid_budget">Budget must be a number greater than 0</string>
+    <string name="err_sum_percentage">The sum of percentages must be exactly 100%%</string>
+
+    <string name="msg_expense_added">Expense saved successfully</string>
+    <string name="msg_expense_edited">Expense edited successfully</string>
+    <string name="msg_expense_deleted">Expense deleted successfully</string>
+    <string name="msg_pending_changes">Changes scheduled for next reset</string>
+    <string name="msg_pending_deletion">Will be deleted in next reset</string>
+    <string name="msg_budget_updated">Budget updated for the current period</string>
+    <string name="msg_budget_planned">Budget scheduled for next cycle</string>
+
+    <!-- Categories -->
+    <string name="cat_rent">Rent</string>
+    <string name="cat_food">Food</string>
+    <string name="cat_services">Services</string>
+    <string name="cat_subscriptions">Subscriptions</string>
+    <string name="cat_other">Other</string>
+
+    <!-- Navigation -->
+    <string name="nav_expenses">Expenses</string>
+    <string name="nav_calendar">Calendar</string>
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_settings">Settings</string>
+</resources>

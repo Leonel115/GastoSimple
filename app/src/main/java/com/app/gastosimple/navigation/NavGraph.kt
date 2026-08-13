@@ -1,5 +1,7 @@
 package com.app.gastosimple.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
@@ -8,6 +10,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.compose.NavHost
@@ -66,12 +69,14 @@ fun NavGraph() {
                 CalendarScreen(viewModel = koinViewModel())
             }
             composable(Screen.Dashboard.route) {
-                // Placeholder
-                Text("Dashboard (Sprint 2)")
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(stringResource(R.string.nav_dashboard))
+                }
             }
             composable(Screen.Settings.route) {
-                // Placeholder
-                Text("Settings (Sprint 2)")
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(stringResource(R.string.nav_settings))
+                }
             }
         }
     }

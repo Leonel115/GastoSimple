@@ -1,59 +1,100 @@
 <resources>
     <string name="app_name">GastoSimple</string>
+
     <!-- Common -->
     <string name="save">Guardar</string>
     <string name="cancel">Cancelar</string>
     <string name="next">Siguiente</string>
+    <string name="continue_label">Continuar</string>
+    <string name="back">Atrás</string>
     <string name="finish">Finalizar</string>
+    <string name="edit">Editar</string>
+    <string name="delete">Eliminar</string>
+    <string name="unknown">Desconocido</string>
 
     <!-- Onboarding -->
     <string name="welcome_title">¡Bienvenido a GastoSimple!</string>
     <string name="welcome_desc">La forma más sencilla de tomar el control de tu dinero sin complicaciones.</string>
-
     <string name="explain_title">¿Cómo funciona?</string>
     <string name="explain_desc">Registra tus gastos diarios y visualiza cuánto presupuesto te queda para el resto del mes.</string>
-
     <string name="saving_title">Planifica y Ahorra</string>
     <string name="saving_desc">Configura tus gastos fijos (alquiler, servicios) y recibe alertas para que nunca te tome por sorpresa.</string>
-
     <string name="get_started">Comenzar</string>
-    <string name="back">Atrás</string>
 
     <!-- Setup Wizard -->
     <string name="setup_title">Configuración Inicial</string>
+    <string name="budget_section">Presupuesto</string>
     <string name="budget_label">Presupuesto Total</string>
+    <string name="setup_budget_title">Define tu Presupuesto</string>
     <string name="cycle_type_label">Ciclo de Presupuesto</string>
     <string name="quincenal">Quincenal</string>
     <string name="mensual">Mensual</string>
-    <string name="add_user">Agregar Usuario</string>
-    <string name="remove_user">Eliminar</string>
-    <string name="user_name_hint">Nombre del usuario</string>
-    <string name="contribution_percentage">Porcentaje de aporte</string>
-    <string name="error_sum_percentage">La suma de porcentajes debe ser exactamente 100%%</string>
+
+    <string name="users_section">Usuarios y Aportes</string>
+    <string name="users_setup_title">Gestionar Participantes</string>
     <string name="single_user">Usuario Único</string>
     <string name="multi_user">Varios Usuarios</string>
-    <string name="budget_section">Presupuesto</string>
-    <string name="users_section">Usuarios y Aportes</string>
     <string name="user_name_label">Nombre del Usuario</string>
+    <string name="user_name_hint">Nombre del usuario</string>
+    <string name="add_user">Agregar Usuario</string>
+    <string name="remove_user">Eliminar</string>
+    <string name="contribution_percentage">Porcentaje de aporte</string>
+    <string name="total_contributions">Total Aportes: %s%%</string>
 
     <!-- Expenses -->
     <string name="expenses_title">Gastos</string>
     <string name="add_expense">Nuevo Gasto</string>
+    <string name="edit_expense">Editar Gasto</string>
+    <string name="delete_expense">Eliminar Gasto</string>
     <string name="empty_expenses">No hay gastos registrados</string>
     <string name="amount_hint">Monto</string>
     <string name="concept_hint">Concepto</string>
     <string name="category_label">Categoría</string>
-    <string name="recurrence_label">Recurrencia</string>
     <string name="payer_label">Pagador</string>
     <string name="shared_expense">Gasto Compartido</string>
-    <string name="none">Ninguna</string>
-    <string name="daily">Diario</string>
-    <string name="weekly">Semanal</string>
-    <string name="monthly">Mensual</string>
+    <string name="remaining_budget">Saldo Restante</string>
+    <string name="planned_budget_info">Próximo presupuesto: $%s</string>
+    <string name="pending_tag">Pendiente</string>
 
-    <!-- Error Messages -->
-    <string name="error_invalid_amount">El monto debe ser mayor a 0</string>
-    <string name="error_insufficient_budget">El monto supera el presupuesto restante (%s)</string>
+    <!-- Recurrence -->
+    <string name="is_recurrent_label">¿Es un gasto recurrente?</string>
+    <string name="recurrence_interval_label">Plazo de pago (días)</string>
+    <string name="custom_days_hint">Días personalizados</string>
+    <string name="days_suffix">%s días</string>
+    <string name="one_time_expense">Gasto único</string>
+    <string name="fixed_monthly">Fijo: Mensual (30 días)</string>
+
+    <!-- Calendar -->
+    <string name="cal_header_prev">Mes Anterior</string>
+    <string name="cal_header_next">Mes Siguiente</string>
+    <string name="cal_details_title">Detalles del día seleccionado:</string>
+    <string name="cal_no_events">No hay gastos programados para este día.</string>
+    <string name="cal_select_day_hint">Selecciona un día para ver los detalles.</string>
+    <string name="cal_legend_title">Guía de Colores</string>
+    <string name="cal_legend_reset">Inicio de Ciclo</string>
+    <string name="cal_legend_multi">Múltiples Gastos</string>
+    <string name="cal_legend_monthly">Mensual (16-31 días)</string>
+    <string name="cal_legend_biweekly">Quincenal (8-15 días)</string>
+    <string name="cal_legend_weekly">Corto (1-7 días)</string>
+    <string name="cal_legend_long">Largo (mayor a 31 días)</string>
+
+    <!-- Error & Info Messages -->
+    <string name="err_empty_concept">El concepto no puede estar vacío</string>
+    <string name="err_invalid_amount">El monto debe ser mayor a 0</string>
+    <string name="err_insufficient_budget">El monto supera el presupuesto restante ($%s)</string>
+    <string name="err_save_expense">Error al guardar el gasto</string>
+    <string name="err_empty_user_name">El nombre de usuario no puede estar vacío</string>
+    <string name="err_multi_user_empty_name">Todos los usuarios deben tener un nombre</string>
+    <string name="err_invalid_budget">El presupuesto debe ser un número mayor a 0</string>
+    <string name="err_sum_percentage">La suma de porcentajes debe ser exactamente 100%%</string>
+
+    <string name="msg_expense_added">Gasto guardado exitosamente</string>
+    <string name="msg_expense_edited">Gasto editado exitosamente</string>
+    <string name="msg_expense_deleted">Gasto eliminado exitosamente</string>
+    <string name="msg_pending_changes">Cambios agendados para el próximo reset</string>
+    <string name="msg_pending_deletion">Se eliminará en el próximo reset</string>
+    <string name="msg_budget_updated">Presupuesto actualizado para el periodo actual</string>
+    <string name="msg_budget_planned">Presupuesto agendado para el próximo ciclo</string>
 
     <!-- Categories -->
     <string name="cat_rent">Alquiler</string>
@@ -61,9 +102,6 @@
     <string name="cat_services">Servicios</string>
     <string name="cat_subscriptions">Suscripciones</string>
     <string name="cat_other">Otros</string>
-
-    <!-- Savings -->
-    <string name="savings_message">¡Has ahorrado %s!</string>
 
     <!-- Navigation -->
     <string name="nav_expenses">Gastos</string>

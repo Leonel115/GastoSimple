@@ -2,6 +2,7 @@ package com.app.gastosimple.features.setup
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.app.gastosimple.R
 import com.app.gastosimple.core.data.local.BudgetPeriodEntity
 import com.app.gastosimple.core.data.local.GastoSimpleDao
 import com.app.gastosimple.core.data.local.UserEntity
@@ -18,7 +19,7 @@ data class SetupState(
     val users: List<UserEntity> = listOf(UserEntity(name = "Usuario Principal", contributionPercentage = 100.0)),
     val currentStep: Int = 0, // 0-2: Onboarding, 3: Budget, 4: Users
     val isFinished: Boolean = false,
-    val error: String? = null
+    val errorResId: Int? = null
 )
 
 class SetupViewModel(
@@ -31,13 +32,13 @@ class SetupViewModel(
 
     fun nextStep() {
         if (_state.value.currentStep < 4) {
-            _state.value = _state.value.copy(currentStep = _state.value.currentStep + 1, error = null)
+            _state.value = _state.value.copy(currentStep = _state.value.currentStep + 1, errorResId = null)
         }
     }
 
     fun previousStep() {
         if (_state.value.currentStep > 0) {
-            _state.value = _state.value.copy(currentStep = _state.value.currentStep - 1, error = null)
+            _state.value = _state.value.copy(currentStep = _state.value.currentStep - 1, errorResId = null)
         }
     }
 
@@ -94,16 +95,16 @@ class SetupViewModel(
         if (_state.value.isMultiUser) {
             val totalPercentage = _state.value.users.sumOf { it.contributionPercentage }
             if (Math.abs(totalPercentage - 100.0) > 0.001) {
-                _state.value = _state.value.copy(error = "La suma de porcentajes debe ser exactamente 100%")
+                _state.value = _state.value.copy(errorResId = R.string.err_sum_percentage)
                 return
             }
             if (_state.value.users.any { it.name.isBlank() }) {
-                _state.value = _state.value.copy(error = "Todos los usuarios deben tener un nombre")
+                _state.value = _state.value.copy(errorResId = R.string.err_multi_user_empty_name)
                 return
             }
         } else {
             if (_state.value.users.first().name.isBlank()) {
-                _state.value = _state.value.copy(error = "El nombre de usuario no puede estar vacío")
+                _state.value = _state.value.copy(errorResId = R.string.err_empty_user_name)
                 return
             }
             // Ensure 100% for single user
@@ -113,12 +114,12 @@ class SetupViewModel(
         }
 
         if (_state.value.budget.isBlank()) {
-            _state.value = _state.value.copy(error = "El presupuesto no puede estar vacío")
+            _state.value = _state.value.copy(errorResId = R.string.err_invalid_budget)
             return
         }
 
         if (_state.value.budget.toDoubleOrNull() == null || _state.value.budget.toDouble() <= 0) {
-            _state.value = _state.value.copy(error = "El presupuesto debe ser un número mayor a 0")
+            _state.value = _state.value.copy(errorResId = R.string.err_invalid_budget)
             return
         }
 

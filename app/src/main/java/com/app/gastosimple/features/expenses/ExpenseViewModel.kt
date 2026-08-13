@@ -2,6 +2,7 @@ package com.app.gastosimple.features.expenses
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.app.gastosimple.R
 import com.app.gastosimple.core.data.local.BudgetPeriodEntity
 import com.app.gastosimple.core.data.local.ExpenseEntity
 import com.app.gastosimple.core.data.local.UserEntity
@@ -20,8 +21,9 @@ data class ExpensesUiState(
     val isAddingExpense: Boolean = false,
     val remainingBudget: String = "0.0",
     val plannedBudget: String? = null,
-    val error: String? = null,
-    val infoMessage: String? = null
+    val errorResId: Int? = null,
+    val errorParam: String? = null, // Para mensajes con parámetros como monto insuficiente
+    val infoResId: Int? = null
 )
 
 class ExpenseViewModel(
@@ -90,24 +92,27 @@ class ExpenseViewModel(
         val periodId = _state.value.activePeriod?.id ?: return
 
         if (concept.isBlank()) {
-            _state.value = _state.value.copy(error = "El concepto no puede estar vacío")
+            _state.value = _state.value.copy(errorResId = R.string.err_empty_concept)
             return
         }
 
         val amountVal = amount.toBigDecimalOrNull() ?: BigDecimal.ZERO
         
         if (amountVal <= BigDecimal.ZERO) {
-            _state.value = _state.value.copy(error = "El monto debe ser mayor a 0")
+            _state.value = _state.value.copy(errorResId = R.string.err_invalid_amount)
             return
         }
         
         val remaining = _state.value.remainingBudget.toBigDecimal()
         if (amountVal > remaining) {
-            _state.value = _state.value.copy(error = "El monto supera el presupuesto restante ($${remaining.toPlainString()})")
+            _state.value = _state.value.copy(
+                errorResId = R.string.err_insufficient_budget,
+                errorParam = remaining.toPlainString()
+            )
             return
         }
 
-        _state.value = _state.value.copy(isAddingExpense = true, error = null)
+        _state.value = _state.value.copy(isAddingExpense = true, errorResId = null, errorParam = null)
 
         viewModelScope.launch {
             try {
@@ -124,9 +129,10 @@ class ExpenseViewModel(
                         periodId = periodId
                     )
                 )
+                _state.value = _state.value.copy(infoResId = R.string.msg_expense_added)
                 _expenseAddedEvent.emit(Unit)
             } catch (e: Exception) {
-                _state.value = _state.value.copy(error = "Error al guardar el gasto")
+                _state.value = _state.value.copy(errorResId = R.string.err_save_expense)
             } finally {
                 _state.value = _state.value.copy(isAddingExpense = false)
             }
@@ -144,7 +150,7 @@ class ExpenseViewModel(
         newRecurrenceInterval: Int?
     ) {
         if (newConcept.isBlank()) {
-            _state.value = _state.value.copy(error = "El concepto no puede estar vacío")
+            _state.value = _state.value.copy(errorResId = R.string.err_empty_concept)
             return
         }
 
@@ -165,7 +171,7 @@ class ExpenseViewModel(
                         pendingRecurrenceInterval = null
                     )
                 )
-                _state.value = _state.value.copy(infoMessage = "Gasto editado exitosamente")
+                _state.value = _state.value.copy(infoResId = R.string.msg_expense_edited)
             } else {
                 dao.updateExpense(
                     expense.copy(
@@ -177,7 +183,7 @@ class ExpenseViewModel(
                         isShared = newIsShared
                     )
                 )
-                _state.value = _state.value.copy(infoMessage = "Cambios agendados para el próximo reset")
+                _state.value = _state.value.copy(infoResId = R.string.msg_pending_changes)
             }
             _expenseAddedEvent.emit(Unit)
         }
@@ -189,10 +195,10 @@ class ExpenseViewModel(
         viewModelScope.launch {
             if (isResetDay) {
                 dao.deleteExpense(expense)
-                _state.value = _state.value.copy(infoMessage = "Gasto eliminado exitosamente")
+                _state.value = _state.value.copy(infoResId = R.string.msg_expense_deleted)
             } else {
                 dao.updateExpense(expense.copy(isPendingDeletion = true))
-                _state.value = _state.value.copy(infoMessage = "Se eliminará en el próximo reset")
+                _state.value = _state.value.copy(infoResId = R.string.msg_pending_deletion)
             }
             _expenseAddedEvent.emit(Unit)
         }
@@ -205,10 +211,10 @@ class ExpenseViewModel(
         viewModelScope.launch {
             if (isResetDay && period != null) {
                 dao.updatePeriod(period.copy(totalBudget = amount))
-                _state.value = _state.value.copy(infoMessage = "Presupuesto actualizado para el periodo actual")
+                _state.value = _state.value.copy(infoResId = R.string.msg_budget_updated)
             } else {
                 prefs.setPlannedBudget(amount)
-                _state.value = _state.value.copy(infoMessage = "Presupuesto agendado para el próximo ciclo")
+                _state.value = _state.value.copy(infoResId = R.string.msg_budget_planned)
             }
             _expenseAddedEvent.emit(Unit)
         }
@@ -262,6 +268,6 @@ class ExpenseViewModel(
     }
 
     fun clearError() {
-        _state.value = _state.value.copy(error = null, infoMessage = null)
+        _state.value = _state.value.copy(errorResId = null, errorParam = null, infoResId = null)
     }
 }

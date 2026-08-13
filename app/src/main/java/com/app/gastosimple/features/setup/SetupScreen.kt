@@ -29,7 +29,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.app.gastosimple.R
@@ -120,7 +119,7 @@ fun SetupScreen(viewModel: SetupViewModel, onFinished: () -> Unit) {
             // Footer con botones elegantes
             SetupFooter(
                 currentStep = state.currentStep,
-                error = state.error,
+                errorResId = state.errorResId,
                 onNext = {
                     if (state.currentStep < 4) viewModel.nextStep()
                     else viewModel.finishSetup()
@@ -159,7 +158,7 @@ fun SetupProgressHeader(
     ) {
         if (showBack) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = CyanBlue)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back), tint = CyanBlue)
             }
         } else {
             Spacer(Modifier.size(48.dp))
@@ -253,7 +252,7 @@ fun BudgetStep(
         verticalArrangement = Arrangement.spacedBy(28.dp)
     ) {
         Text(
-            text = "Configura tu Presupuesto",
+            text = stringResource(R.string.setup_budget_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color = CyanBlue
@@ -321,7 +320,7 @@ fun UsersStep(
     ) {
         item {
             Text(
-                text = "Gestionar Participantes",
+                text = stringResource(R.string.users_setup_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = CyanBlue
@@ -341,7 +340,7 @@ fun UsersStep(
                 OutlinedTextField(
                     value = users[0].name,
                     onValueChange = { onUpdateName(0, it) },
-                    label = { Text("Tu nombre de usuario", color = LightCoolBlue.copy(alpha = 0.7f)) },
+                    label = { Text(stringResource(R.string.user_name_label), color = LightCoolBlue.copy(alpha = 0.7f)) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.large,
                     colors = OutlinedTextFieldDefaults.colors(
@@ -369,7 +368,7 @@ fun UsersStep(
                         OutlinedTextField(
                             value = user.name,
                             onValueChange = { onUpdateName(index, it) },
-                            label = { Text("Alias", color = LightCoolBlue.copy(alpha = 0.6f)) },
+                            label = { Text(stringResource(R.string.user_name_hint), color = LightCoolBlue.copy(alpha = 0.6f)) },
                             modifier = Modifier.weight(1.8f),
                             shape = MaterialTheme.shapes.medium,
                             colors = OutlinedTextFieldDefaults.colors(
@@ -395,7 +394,7 @@ fun UsersStep(
                         )
                         if (users.size > 1) {
                             IconButton(onClick = { onRemoveUser(index) }) {
-                                Icon(Icons.Default.Delete, contentDescription = null, tint = ErrorRed.copy(alpha = 0.8f))
+                                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.remove_user), tint = ErrorRed.copy(alpha = 0.8f))
                             }
                         }
                     }
@@ -411,7 +410,7 @@ fun UsersStep(
                     OutlinedTextField(
                         value = newUserName,
                         onValueChange = { newUserName = it },
-                        label = { Text("Nombre del acompañante", color = LightCoolBlue.copy(alpha = 0.6f)) },
+                        label = { Text(stringResource(R.string.add_user), color = LightCoolBlue.copy(alpha = 0.6f)) },
                         modifier = Modifier.weight(1f),
                         shape = MaterialTheme.shapes.large,
                         colors = OutlinedTextFieldDefaults.colors(
@@ -513,7 +512,7 @@ fun <T> AnimatedSegmentedPicker(
 @Composable
 fun SetupFooter(
     currentStep: Int,
-    error: String?,
+    errorResId: Int?,
     onNext: () -> Unit
 ) {
     Column(
@@ -522,14 +521,14 @@ fun SetupFooter(
             .padding(24.dp)
             .navigationBarsPadding()
     ) {
-        if (error != null) {
+        if (errorResId != null) {
             Surface(
                 color = ErrorRed.copy(alpha = 0.1f),
                 shape = MaterialTheme.shapes.small,
                 modifier = Modifier.padding(bottom = 12.dp).fillMaxWidth()
             ) {
                 Text(
-                    text = error,
+                    text = stringResource(errorResId),
                     color = ErrorRed,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -548,7 +547,7 @@ fun SetupFooter(
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
         ) {
             Text(
-                text = if (currentStep < 4) "Continuar" else stringResource(R.string.finish),
+                text = if (currentStep < 4) stringResource(R.string.continue_label) else stringResource(R.string.finish),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.ExtraBold,
                 letterSpacing = 1.sp
