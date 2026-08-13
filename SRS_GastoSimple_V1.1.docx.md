@@ -6,7 +6,7 @@
 
 # **GastoSimple**
 
-**Versión 1.0**
+**Versión 1.1**
 
  
 
@@ -48,7 +48,8 @@
 
 | Fecha | Versión | Descripción | Autor(es) |
 | :---- | :---- | :---- | :---- |
-| *10/ago/26* | *1.0* | *Creación del ERS/SRS de GastoSimple basada en el Brief v1.0, detallando Sprints con tablas Canvas BDD y Requisitos Suplementarios alineados a la norma ISO 25010\.* | *Leonel Rojas, Jesús Acosta, Rolando Rodrigo* |
+| *7/ago/26* | *1.0* | *Creación del ERS/SRS de GastoSimple basada en el Brief v1.0, detallando Sprints con tablas Canvas BDD y Requisitos Suplementarios alineados a la norma ISO 25010\.* | *Leonel Rojas, Jesús Acosta, Rolando Rodrigo* |
+| *13/ago/26* |                            *1.1* | *Incorporación de la Épica 5: Cuotas y Gastos Imprevistos (Historias de Usuario HU-12 a HU-15, entregables del negocio, desglose del Release 2 y atributos de calidad de amortización).* | *Leonel Rojas* |
 
  
 
@@ -273,7 +274,7 @@ Este artefacto detalla los requisitos de software para el Sistema **GastoSimple*
 
 ### **1.2 Sprint 2 (Release 2 \- Iteración 2\)**
 
-*Historias del Dashboard de Análisis Financiero y Personalización Visual (HU-06, HU-07, HU-08, HU-11).*
+*Historias del Dashboard de Análisis Financiero, gestion de cuotas junto a gastos imprevistos y Personalización Visual (HU-06, HU-07, HU-08, HU-11, HU-12, HU-13, HU-14, HU-15).*
 
  
 
@@ -369,7 +370,63 @@ Este artefacto detalla los requisitos de software para el Sistema **GastoSimple*
 | :---- | :---- | :---- |
 | Personalización y apropiación visual de la interfaz adaptada a las preferencias del usuario. | **Puntos de Historia:** 3 pts.**Casos de Prueba:** 4 casos de prueba (cambio en tiempo real, persistencia tras reinicio, alternancia entre temas, lectura inicial). | **Nota Técnica:** Se utiliza DataStore en lugar de Room por tratarse de una configuración liviana de tipo clave-valor. |
 
+ **1.2.5 HU-12: Compras/Deudas a Cuotas Fijas** 
+
+| 2\. Historia de Usuario | 1\. Persona | 4\. Contexto |
+| :---- | :---- | :---- |
+| **Como** usuario, **quiero** registrar compras o deudas a cuotas fijas indicando el monto total, número de plazos y frecuencia, **para** llevar un control estructurado de mis compromisos de pago diferidos. | **Primario**: Usuario individual o representante financiero de un grupo. | **Épica**: Épica 5 \- Cuotas y Gastos Imprevistos. Escenario: Registro de compras financiadas, préstamos o pagos diferidos. **Regla de Negocio**: El monto total debe ser mayor a cero, el número de plazos debe ser un entero positivo (≥ 1). El sistema calcula el valor base de la cuota como Monto Total / Número de Plazos usando BigDecimal. |
+
+| 3\. Criterios de Aceptación | 5\. Definición de Preparado (DoR) | 6\. Definición de Terminado (DoD) |
+| :---- | :---- | :---- |
+| Dado que el usuario ingresa una compra a cuotas con un monto total de $1,200 a 12 plazos, cuando presiona "Guardar Compromiso", entonces el sistema genera el plan de amortización con 12 cuotas fijas de $100 cada una, almacena el registro en Room y fija el saldo pendiente inicial en $1,200. Dado que el usuario ingresa un número de cuotas igual a cero o un monto negativo, cuando intenta guardar, entonces la interfaz despliega una alerta de validación impidiendo la creación del registro. | • Formulario de registro de deuda/cuota maquetado en Jetpack Compose con selectores de plazo. • Entidad InstallmentExpenseEntity definida en Room con relaciones a la tabla de egresos. • Módulo de cálculo numérico verificado con BigDecimal. | • Lógica de generación de cuotas probada mediante pruebas unitarias en ViewModel y UseCase. • Persistencia local verificada en Room Database sin dependencias de red. • Interfaz responsiva probada en modo claro y oscuro. |
+
+| 7\. Resultado Esperado | 8\. Métricas | 9\. Retroalimentación |
+| :---- | :---- | :---- |
+| Proyección y desglose automático de compromisos diferidos a plazo fijo sin errores de redondeo. | **Puntos de Historia:** 5 pts. **Casos de Prueba:** 5 casos ejecutados (registro a cuotas válido, plazos negativos/cero, división con decimales periódicos, edición de plazos, almacenamiento en Room). | Nota Técnica: Se utiliza BigDecimal.divide(plazos, 2, RoundingMode.HALF\_UP) para ajustar los decimales exactos en cada plazo sin perder centavos. |
+
+ **1.2.6 HU-13: Gastos Imprevistos y Emergencias** 
+
+| 2\. Historia de Usuario | 1\. Persona | 4\. Contexto |
+| :---- | :---- | :---- |
+| **Como** usuario, **quiero** registrar gastos imprevistos o contingencias asignándoles un esquema de aportes/amortizaciones periódicas (mensuales o quincenales), **para** amortizar emergencias sin desestabilizar mi flujo de caja habitual. | **Primario:** Usuario de la aplicación. | **Épica:** Épica 5 \- Cuotas y Gastos Imprevistos. **Escenario:** Registro y plan de recuperación ante egresos no planificados. **Regla de Negocio:** Los gastos imprevistos se marcan con una categoría especial de contingencia y permiten asociar aportes periódicos programados (quincenales o mensuales) para restituir el capital. |
+
+| 3\. Criterios de Aceptación | 5\. Definición de Preparado (DoR) | 6\. Definición de Terminado (DoD) |
+| :---- | :---- | :---- |
+| Dado que surge una emergencia financiera (ej. reparación de vehículo por $500), cuando el usuario la registra como "Gasto Imprevisto" y selecciona un esquema de amortización quincenal o mensual, entonces el sistema registra la contingencia y programa las cuotas de recuperación en el calendario financiero local. Dado que el usuario efectúa un aporte parcial a la emergencia registrada, cuando confirma la transacción, entonces el sistema descuenta el aporte del saldo pendiente de la contingencia y recalcula el importe restante. | • Formulario de contingencia integrado con selector de periodicidad de amortización. • Atributo isEmergency y relación de abonos incorporados en Room. • Lógica de amortización parcial documentada. | • Pruebas unitarias al 100% en la reducción del saldo de imprevistos tras cada abono. • Integración fluida con el calendario de pagos locales (HU-09). • Funcionamiento offline comprobado. |
+
+| 7\. Resultado Esperado | 8\. Métricas | 9\. Retroalimentación |
+| :---- | :---- | :---- |
+| Registro responsivo de contingencias con planes de amortización progresiva. | **Puntos de Historia:** 5 pts. **Casos de Prueba:** 4 casos ejecutados (creación de imprevisto, amortización quincenal, amortización mensual, saldo restante parcial). | **Conversación PO:** Los imprevistos deben distinguirse visualmente en la interfaz con un indicador de contingencia de color destacado. |
+
  
+
+**1.2.7 HU-14: Monitoreo de Saldos Pendientes** 
+
+| 2\. Historia de Usuario | 1\. Persona | 4\. Contexto |
+| :---- | :---- | :---- |
+| **Como** usuario, **quiero** consultar un panel de monitoreo de saldos pendientes, **para** visualizar el capital original, el avance de pago y el importe restado de mis deudas a cuotas e imprevistos en tiempo real. | **Primario:** Usuario de GastoSimple. | **Épica:** Épica 5 \- Cuotas y Gastos Imprevistos. **Escenario:** Vista de seguimiento del estado de deudas y contingencias activas. **Regla de Negocio:** Saldo Pendiente \= Capital Original \- Suma(Aportes/Cuotas Pagadas). Porcentaje Avance \= (Pagado / Capital Original) \* 100\. |
+
+| 3\. Criterios de Aceptación | 5\. Definición de Preparado (DoR) | 6\. Definición de Terminado (DoD) |
+| :---- | :---- | :---- |
+| Dado que existen deudas a cuotas o imprevistos activos, cuando el usuario accede a la pantalla de "Monitoreo de Saldos Pendientes", entonces el sistema presenta una lista de tarjetas activas con el capital original, total abonado, saldo pendiente y barra de progreso de liquidación. Dado que no existen compromisos vigentes, cuando se abre la vista, entonces se despliega una pantalla de estado vacío ("Empty State") informando que no hay deudas ni imprevistos pendientes. | • Componente PendingBalanceCard diseñado en Jetpack Compose con barras de progreso vectoriales. • Consulta SQL reactiva @Query optimizada en Room para sumar aportes vinculados. • Estado reactivo mediante StateFlow. | • Renderizado a 60 FPS en LazyColumn. • Actualización reactiva inmediata en pantalla tras registrar un nuevo abono o cuota. • Precisión matemática validada con BigDecimal. |
+
+| 7\. Resultado Esperado | 8\. Métricas | 9\. Retroalimentación |
+| :---- | :---- | :---- |
+| Visión centralizada e intuitiva del estado de amortización de todas las obligaciones activas. | Puntos de Historia: 3 pts. Casos de Prueba: 4 casos ejecutados (vista con múltiples deudas, barra de progreso parcial, actualización en tiempo real, estado vacío). | Nota Técnica: Las consultas de consolidación de saldo se ejecutan en un hilo secundario mediante Dispatchers.IO. |
+
+ **1.2.8 HU-15: Cierre Automático y Cambio de Estado** 
+
+| 2\. Historia de Usuario | 1\. Persona | 4\. Contexto |
+| :---- | :---- | :---- |
+| Como **usuario**, **quiero** que el sistema liquide y salde automáticamente una compra a cuotas o gasto imprevisto cuando el saldo pendiente llegue a cero, **para** mantener depurado mi panel de obligaciones activas. | **Primario:** Usuario de la aplicación. | **Épica:** Épica 5 \- Cuotas y Gastos Imprevistos. **Escenario:** Finalización y liquidación del 100% de una obligación financiera. **Regla de Negocio:** Cuando Saldo Pendiente \== 0.00, el sistema cambia automáticamente el estado del compromiso de ACTIVO a SALDADO y lo remueve del resumen de obligaciones vigentes. |
+
+| 3\. Criterios de Aceptación | 5\. Definición de Preparado (DoR) | 6\. Definición de Terminado (DoD) |
+| :---- | :---- | :---- |
+| Dado que una deuda o imprevisto tiene un saldo pendiente igual al valor de su última cuota, cuando el usuario registra el pago final completando el 100% del monto, entonces el sistema cambia automáticamente el estado a SALDADO, lo remueve de la lista activa y emite un mensaje de confirmación de liquidación. Dado que un compromiso ha sido marcado como SALDADO, cuando el usuario consulta el desglose de saldos pendientes, entonces comprueba que dicho registro ya no suma al total de deudas vigentes, quedando disponible en el historial de liquidados. | • Enumeración de estados ObligationStatus { ACTIVE, SETTLED } definida en el modelo de dominio. • Disparador de cambio de estado implementado en la capa de UseCase al procesar un pago. | • Pruebas unitarias automatizadas del cambio de estado al llegar al 100%. • Filtrado correcto en la base de datos Room (WHERE status \= 'ACTIVE'). • Cero inconsistencias en los totales globales de deuda activa. |
+
+| 7\. Resultado Esperado | 8\. Métricas | 9\. Retroalimentación |
+| :---- | :---- | :---- |
+| Cierre automático y transparente de compromisos financieros saldados sin intervención manual. | Puntos de Historia: 3 pts. Casos de Prueba: 4 casos ejecutados (liquidación exacta con última cuota, cambio de estado en Room, exclusión del panel activo, consulta en histórico). | Conversación PO: Al saldar un compromiso, se muestra un micro-mensaje afirmativo (Snackbar) felicitando al usuario por completar el pago. |
 
  
 
