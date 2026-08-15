@@ -6,7 +6,7 @@
 
 # **GastoSimple**
 
-**Versión 1.1**
+**Versión 1.2**
 
  
 
@@ -50,6 +50,7 @@
 | :---- | :---- | :---- | :---- |
 | *7/ago/26* | *1.0* | *Creación del ERS/SRS de GastoSimple basada en el Brief v1.0, detallando Sprints con tablas Canvas BDD y Requisitos Suplementarios alineados a la norma ISO 25010\.* | *Leonel Rojas, Jesús Acosta, Rolando Rodrigo* |
 | *13/ago/26* |                            *1.1* | *Incorporación de la Épica 5: Cuotas y Gastos Imprevistos (Historias de Usuario HU-12 a HU-15, entregables del negocio, desglose del Release 2 y atributos de calidad de amortización).* | *Leonel Rojas* |
+| *15/ago/26* | *1.2* | *Eliminación de los elementos de sobregiro en la HU-06* | *Jesús Acosta*  |
 
  
 
@@ -290,13 +291,13 @@ Este artefacto detalla los requisitos de software para el Sistema **GastoSimple*
 
 | 3\. Criterios de Aceptación | 5\. Definición de Preparado (DoR) | 6\. Definición de Terminado (DoD) |
 | :---- | :---- | :---- |
-| **Dado que** existe un presupuesto definido y egresos registrados,**cuando** el usuario accede al Dashboard,**entonces** el sistema muestra un indicador gráfico (barra o anillo de progreso) con el porcentaje consumido y el saldo restante en moneda local.**Dado que** el total de gastos supera el 100% del presupuesto definido,**cuando** se actualiza el panel,**entonces** el gráfico cambia a un tono de advertencia visual (ej. rojo) indicando sobregiro presupuestario. | • Diseño de componentes de gráficos circulares/barras en Jetpack Compose Canvas. • Casos de prueba matemática definidos para presupuestos normales y sobregirados. | • Pruebas de interfaz exitosas. • Actualización reactiva inmediata en la UI al agregar o eliminar un gasto. • Cálculos numéricos precisos sin redondeos erróneos. |
+| **Dado que** existe un presupuesto definido y egresos registrados,**cuando** el usuario accede al Dashboard,**entonces** el sistema muestra un indicador gráfico (barra o anillo de progreso) con el porcentaje consumido y el saldo restante en moneda local.**Dado que** el total de gastos supera el 100% del presupuesto definido,**cuando** se actualiza el panel,**entonces** el gráfico cambia a un tono de advertencia visual (ej. rojo) indicando sobregiro presupuestario. | • Diseño de componentes de gráficos circulares/barras en Jetpack Compose Canvas. • Casos de prueba matemática definidos para presupuestos. | • Pruebas de interfaz exitosas. • Actualización reactiva inmediata en la UI al agregar o eliminar un gasto. • Cálculos numéricos precisos sin redondeos erróneos. |
 
  
 
 | 7\. Resultado Esperado | 8\. Métricas | 9\. Retroalimentación |
 | :---- | :---- | :---- |
-| Visión sintética y gráfica del estado del presupuesto y la liquidez disponible. | **Puntos de Historia:** 3 pts. **Casos de Prueba:** 4 casos de prueba (consumo \< 100%, consumo \= 100%, sobregiro \> 100%, sin presupuesto asignado). | **Nota:** Las barras de progreso deben ser completamente vectoriales en Compose para responder a distintas resoluciones. |
+| Visión sintética y gráfica del estado del presupuesto y la liquidez disponible. | **Puntos de Historia:** 3 pts. **Casos de Prueba:** 3 casos de prueba (consumo \< 100%, consumo \= 100%, sin presupuesto asignado). | **Nota:** Las barras de progreso deben ser completamente vectoriales en Compose para responder a distintas resoluciones. |
 
  
 
