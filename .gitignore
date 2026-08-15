@@ -5,6 +5,7 @@ bin/
 gen/
 out/
 .artifacts/
+.continue/
 
 # IDE files
 .idea/
@@ -27,4 +28,3 @@ Thumbs.db
 
 # Local configuration
 local.properties
-.continuerules.md
