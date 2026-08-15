@@ -35,8 +35,8 @@ class GetBudgetProgressUseCaseTest {
         // Arrange
         val period = BudgetPeriodEntity(id = 1, totalBudget = "1000.00", startDate = 0, endDate = null, cycleType = "MENSUAL")
         val expenses = listOf(
-            ExpenseEntity(amount = "200.00", concept = "A", category = "X", userId = 1, date = 0, recurrence = "NONE", periodId = 1),
-            ExpenseEntity(amount = "300.00", concept = "B", category = "Y", userId = 1, date = 0, recurrence = "NONE", periodId = 1)
+            ExpenseEntity(amount = "200.00", concept = "A", category = "Servicios", userId = 1, date = 0, recurrence = "NONE", periodId = 1),
+            ExpenseEntity(amount = "300.00", concept = "B", category = "Alimentación", userId = 1, date = 0, recurrence = "NONE", periodId = 1)
         )
         every { repository.getActivePeriod() } returns flowOf(period)
         every { repository.getExpenses(1) } returns flowOf(expenses)
@@ -54,11 +54,46 @@ class GetBudgetProgressUseCaseTest {
     }
 
     @Test
+    fun `when expenses are registered, then all 5 official categories are present`() = runTest {
+        // Arrange
+        val period = BudgetPeriodEntity(id = 1, totalBudget = "1000.00", startDate = 0, endDate = null, cycleType = "MENSUAL")
+        val expenses = listOf(
+            ExpenseEntity(amount = "100.00", concept = "Serv1", category = "Servicios", userId = 1, date = 0, recurrence = "NONE", periodId = 1),
+            ExpenseEntity(amount = "200.00", concept = "Alim1", category = "Alimentación", userId = 1, date = 0, recurrence = "NONE", periodId = 1),
+            ExpenseEntity(amount = "50.00", concept = "Desconocido", category = "Extra", userId = 1, date = 0, recurrence = "NONE", periodId = 1)
+        )
+        every { repository.getActivePeriod() } returns flowOf(period)
+        every { repository.getExpenses(1) } returns flowOf(expenses)
+
+        // Act
+        val result = useCase().first()
+
+        // Assert
+        assertEquals(5, result.categories.size)
+        
+        val servicios = result.categories.find { it.name == "Servicios" }!!
+        assertEquals(BigDecimal("100.00"), servicios.amount)
+        assertEquals(10f, servicios.percentage, 0.01f)
+        
+        val alimentacion = result.categories.find { it.name == "Alimentación" }!!
+        assertEquals(BigDecimal("200.00"), alimentacion.amount)
+        assertEquals(20f, alimentacion.percentage, 0.01f)
+        
+        val otros = result.categories.find { it.name == "Otros" }!!
+        assertEquals(BigDecimal("50.00"), otros.amount)
+        assertEquals(5f, otros.percentage, 0.01f)
+        
+        val alquiler = result.categories.find { it.name == "Alquiler" }!!
+        assertEquals(BigDecimal("0.00"), alquiler.amount)
+        assertEquals(0f, alquiler.percentage, 0.01f)
+    }
+
+    @Test
     fun `when spent exceeds budget, then isOverBudget is true`() = runTest {
         // Arrange
         val period = BudgetPeriodEntity(id = 1, totalBudget = "100.00", startDate = 0, endDate = null, cycleType = "MENSUAL")
         val expenses = listOf(
-            ExpenseEntity(amount = "120.00", concept = "A", category = "X", userId = 1, date = 0, recurrence = "NONE", periodId = 1)
+            ExpenseEntity(amount = "120.00", concept = "A", category = "Servicios", userId = 1, date = 0, recurrence = "NONE", periodId = 1)
         )
         every { repository.getActivePeriod() } returns flowOf(period)
         every { repository.getExpenses(1) } returns flowOf(expenses)
