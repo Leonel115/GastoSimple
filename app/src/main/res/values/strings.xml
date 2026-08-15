@@ -23,7 +23,7 @@
 
     <!-- Setup Wizard -->
     <string name="setup_title">Configuración Inicial</string>
-    <string name="budget_section">Presupuesto</string>
+    <string name="budget_section">Presupuesto usado</string>
     <string name="budget_label">Presupuesto Total</string>
     <string name="setup_budget_title">Define tu Presupuesto</string>
     <string name="cycle_type_label">Ciclo de Presupuesto</string>
@@ -108,4 +108,8 @@
     <string name="nav_calendar">Calendario</string>
     <string name="nav_dashboard">Dashboard</string>
     <string name="nav_settings">Ajustes</string>
+
+    <!-- Dashboard Refactor -->
+    <string name="budget_excess">Exceso</string>
+    <string name="budget_free">Restante</string>
 </resources>

@@ -5,6 +5,7 @@ bin/
 gen/
 out/
 .artifacts/
+.continue/
 
 # IDE files
 .idea/

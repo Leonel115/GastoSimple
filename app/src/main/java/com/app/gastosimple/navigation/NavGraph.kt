@@ -22,6 +22,7 @@ import com.app.gastosimple.core.data.prefs.UserPreferencesRepository
 import com.app.gastosimple.features.calendar.CalendarScreen
 import com.app.gastosimple.features.expenses.ExpenseListScreen
 import com.app.gastosimple.features.setup.SetupScreen
+import com.app.gastosimple.features.dashboard.ui.DashboardScreen
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
@@ -69,9 +70,7 @@ fun NavGraph() {
                 CalendarScreen(viewModel = koinViewModel())
             }
             composable(Screen.Dashboard.route) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(stringResource(R.string.nav_dashboard))
-                }
+                DashboardScreen()
             }
             composable(Screen.Settings.route) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
