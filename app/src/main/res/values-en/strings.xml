@@ -45,6 +45,7 @@
     <string name="expenses_title">Expenses</string>
     <string name="add_expense">New Expense</string>
     <string name="edit_expense">Edit Expense</string>
+    <string name="expense_date_label">Expense date</string>
     <string name="delete_expense">Delete Expense</string>
     <string name="empty_expenses">No expenses recorded</string>
     <string name="amount_hint">Amount</string>

@@ -27,7 +27,8 @@ data class ExpenseEntity(
     // Diferido / Pending Changes
     val pendingAmount: String? = null,
     val pendingRecurrenceInterval: Int? = null,
-    val isPendingDeletion: Boolean = false
+    val isPendingDeletion: Boolean = false,
+    val isDeleted: Boolean = false
 )
 
 @Entity(tableName = "budget_periods")

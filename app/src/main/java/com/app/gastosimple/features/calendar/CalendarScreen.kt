@@ -133,8 +133,10 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
                             }
                         } ?: false
 
-                        // Events for Day Logic - Only for today and future
-                        val eventsForDay = if (isPastDay) emptyList() else state.recurringExpenses.filter { expense ->
+                        // Events for Day Logic
+                        val eventsForDay = state.allExpenses
+                            .filter { !it.isDeleted } // Solo no eliminados
+                            .filter { expense ->
                             val expenseStartCal = Calendar.getInstance().apply { 
                                 timeInMillis = expense.date 
                                 set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
@@ -226,7 +228,7 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
                 }
                 val targetDayMillis = targetDayCal.timeInMillis
 
-                state.recurringExpenses.filter { expense ->
+                state.allExpenses.filter { expense ->
                     val expenseStartCal = Calendar.getInstance().apply { 
                         timeInMillis = expense.date 
                         set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
