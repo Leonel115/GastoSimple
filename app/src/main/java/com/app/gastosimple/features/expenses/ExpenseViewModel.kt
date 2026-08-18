@@ -222,23 +222,12 @@ class ExpenseViewModel(
 
     private fun isResetDayForPeriod(period: BudgetPeriodEntity): Boolean {
         val calendar = Calendar.getInstance()
-        val todayMillis = calendar.apply { 
-            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) 
-        }.timeInMillis
+        val dayOfMonth = calendar.get(Calendar.DAY_OF_MONTH)
         
-        val startCal = Calendar.getInstance().apply { 
-            timeInMillis = period.startDate
-            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-        }
-        
-        if (startCal.timeInMillis == todayMillis) return true
-        
-        if (period.cycleType == "MENSUAL") {
-            return calendar.get(Calendar.DAY_OF_MONTH) == startCal.get(Calendar.DAY_OF_MONTH)
+        return if (period.cycleType == "MENSUAL") {
+            dayOfMonth == 1
         } else {
-            val diffMillis = todayMillis - startCal.timeInMillis
-            val diffDays = (diffMillis / (1000 * 60 * 60 * 24)).toInt()
-            return diffDays >= 0 && diffDays % 15 == 0
+            dayOfMonth == 1 || dayOfMonth == 15
         }
     }
 
@@ -251,17 +240,22 @@ class ExpenseViewModel(
             set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) 
         }.timeInMillis
         
-        val expenseCal = Calendar.getInstance().apply { 
+        val expenseStartCal = Calendar.getInstance().apply { 
             timeInMillis = expense.date
             set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
         }
         
-        if (expenseCal.timeInMillis == todayMillis) return true
+        if (expenseStartCal.timeInMillis == todayMillis) return true
+        
+        if (expense.recurrence == "MONTHLY") {
+            // El reset de un gasto mensual es el mismo día del mes de creación
+            return calendar.get(Calendar.DAY_OF_MONTH) == expenseStartCal.get(Calendar.DAY_OF_MONTH)
+        }
         
         val interval = expense.recurrenceInterval ?: 0
         if (interval <= 0) return false
         
-        val diffMillis = todayMillis - expenseCal.timeInMillis
+        val diffMillis = todayMillis - expenseStartCal.timeInMillis
         val diffDays = (diffMillis / (1000 * 60 * 60 * 24)).toInt()
         
         return diffDays >= 0 && diffDays % interval == 0

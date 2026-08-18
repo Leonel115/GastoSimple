@@ -58,7 +58,10 @@
 
     <!-- Recurrence -->
     <string name="is_recurrent_label">Is it a recurring expense?</string>
-    <string name="recurrence_interval_label">Payment term (days)</string>
+    <string name="recurrence_interval_label">Payment term</string>
+    <string name="recurrence_weekly">Weekly</string>
+    <string name="recurrence_biweekly">Biweekly</string>
+    <string name="recurrence_monthly">Monthly</string>
     <string name="custom_days_hint">Custom days</string>
     <string name="days_suffix">%s days</string>
     <string name="one_time_expense">One-time expense</string>

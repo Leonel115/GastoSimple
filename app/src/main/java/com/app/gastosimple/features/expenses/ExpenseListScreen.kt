@@ -234,9 +234,9 @@ fun ExpenseFormDialog(
     )
 
     val presets = when (category) {
-        "Alquiler" -> listOf(15, 20, 30)
-        "Suscripciones" -> listOf(15, 30)
-        else -> listOf(7, 15, 30)
+        "Alquiler" -> listOf(15 to stringResource(R.string.recurrence_biweekly), 30 to stringResource(R.string.recurrence_monthly))
+        "Suscripciones" -> listOf(15 to stringResource(R.string.recurrence_biweekly), 30 to stringResource(R.string.recurrence_monthly))
+        else -> listOf(7 to stringResource(R.string.recurrence_weekly), 15 to stringResource(R.string.recurrence_biweekly), 30 to stringResource(R.string.recurrence_monthly))
     }
 
     LaunchedEffect(category) {
@@ -346,14 +346,14 @@ fun ExpenseFormDialog(
                     item {
                         Text(stringResource(R.string.recurrence_interval_label), style = MaterialTheme.typography.labelLarge)
                         FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            presets.forEach { days ->
+                            presets.forEach { (days, label) ->
                                 FilterChip(
                                     selected = recurrenceInterval == days,
                                     onClick = { 
                                         recurrenceInterval = days
                                         customInterval = days.toString()
                                     },
-                                    label = { Text(stringResource(R.string.days_suffix, days)) },
+                                    label = { Text(label) },
                                     enabled = !isSaving
                                 )
                             }
@@ -416,14 +416,19 @@ fun ExpenseFormDialog(
         confirmButton = {
             Button(
                 onClick = { 
+                    val recurrenceType = when {
+                        !isRecurrent -> "NONE"
+                        recurrenceInterval == 30 -> "MONTHLY"
+                        else -> "PERIODIC"
+                    }
                     onConfirm(
                         amount, 
                         concept, 
                         category, 
                         userId, 
                         isShared, 
-                        if (isRecurrent) "PERIODIC" else "NONE", 
-                        if (isRecurrent) recurrenceInterval else null
+                        recurrenceType, 
+                        recurrenceInterval
                     ) 
                 },
                 enabled = !isSaving
