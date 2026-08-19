@@ -21,6 +21,7 @@ import com.app.gastosimple.R
 import com.app.gastosimple.core.data.prefs.UserPreferencesRepository
 import com.app.gastosimple.features.calendar.CalendarScreen
 import com.app.gastosimple.features.expenses.ExpenseListScreen
+import com.app.gastosimple.features.installments.InstallmentsScreen
 import com.app.gastosimple.features.setup.SetupScreen
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
@@ -69,9 +70,12 @@ fun NavGraph() {
                 CalendarScreen(viewModel = koinViewModel())
             }
             composable(Screen.Dashboard.route) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(stringResource(R.string.nav_dashboard))
-                }
+                InstallmentsScreen(
+                    viewModel = koinViewModel(),
+                    onNavigateToRegisterPayment = { installmentId ->
+                        // Placeholder for navigation to payment registration
+                    }
+                )
             }
             composable(Screen.Settings.route) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

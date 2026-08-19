@@ -9,6 +9,7 @@ import com.app.gastosimple.features.expenses.ExpenseViewModel
 import com.app.gastosimple.features.calendar.CalendarViewModel
 import com.app.gastosimple.features.installments.CalculateInstallmentQuotaUseCase
 import com.app.gastosimple.features.installments.GetActiveBalancesUseCase
+import com.app.gastosimple.features.installments.InstallmentViewModel
 import com.app.gastosimple.features.installments.ProcessPaymentAndCloseUseCase
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
@@ -38,4 +39,5 @@ val appModule = module {
     viewModel { SetupViewModel(get(), get()) }
     viewModel { ExpenseViewModel(get(), get(), get()) }
     viewModel { CalendarViewModel(get()) }
+    viewModel { InstallmentViewModel(get(), get()) }
 }

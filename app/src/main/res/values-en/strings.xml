@@ -96,6 +96,16 @@
     <string name="msg_budget_updated">Budget updated for the current period</string>
     <string name="msg_budget_planned">Budget scheduled for next cycle</string>
 
+    <!-- Installments (Épica 5) -->
+    <string name="installments_title">Pending Balances</string>
+    <string name="original_capital">Original Capital</string>
+    <string name="remaining_balance_label">Remaining Balance</string>
+    <string name="total_paid">Total Paid</string>
+    <string name="emergency_tag">Contingency</string>
+    <string name="empty_installments">You have no pending debts or emergencies. Good job!</string>
+    <string name="msg_congratulations">Congratulations! You have settled a financial commitment.</string>
+    <string name="register_payment">Register Payment</string>
+
     <!-- Categories -->
     <string name="cat_rent">Rent</string>
     <string name="cat_food">Food</string>
