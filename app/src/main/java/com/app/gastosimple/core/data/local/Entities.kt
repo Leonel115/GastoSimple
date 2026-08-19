@@ -1,6 +1,7 @@
 package com.app.gastosimple.core.data.local
 
 import androidx.room.Entity
+import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
 import java.math.BigDecimal
 
@@ -23,7 +24,17 @@ data class InstallmentExpenseEntity(
     val startDate: Long
 )
 
-@Entity(tableName = "expenses")
+@Entity(
+    tableName = "expenses",
+    foreignKeys = [
+        ForeignKey(
+            entity = InstallmentExpenseEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["installmentId"],
+            onDelete = ForeignKey.SET_NULL
+        )
+    ]
+)
 data class ExpenseEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val amount: BigDecimal,

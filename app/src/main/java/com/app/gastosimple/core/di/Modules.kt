@@ -21,7 +21,7 @@ val databaseModule = module {
             androidContext(),
             GastoSimpleDatabase::class.java,
             "gastosimple_db"
-        ).addMigrations(GastoSimpleDatabase.MIGRATION_2_3)
+        ).addMigrations(GastoSimpleDatabase.MIGRATION_2_3, GastoSimpleDatabase.MIGRATION_3_4)
             .build()
     }
     single { get<GastoSimpleDatabase>().dao() }
@@ -37,7 +37,7 @@ val appModule = module {
     factory { ProcessPaymentAndCloseUseCase(get()) }
     
     viewModel { SetupViewModel(get(), get()) }
-    viewModel { ExpenseViewModel(get(), get(), get()) }
+    viewModel { ExpenseViewModel(get(), get(), get(), get()) }
     viewModel { CalendarViewModel(get()) }
     viewModel { InstallmentViewModel(get(), get()) }
 }

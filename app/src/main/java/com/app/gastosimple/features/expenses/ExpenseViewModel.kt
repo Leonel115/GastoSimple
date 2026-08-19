@@ -3,10 +3,9 @@ package com.app.gastosimple.features.expenses
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.gastosimple.R
-import com.app.gastosimple.core.data.local.BudgetPeriodEntity
-import com.app.gastosimple.core.data.local.ExpenseEntity
-import com.app.gastosimple.core.data.local.UserEntity
+import com.app.gastosimple.core.data.local.*
 import com.app.gastosimple.core.data.prefs.UserPreferencesRepository
+import com.app.gastosimple.features.installments.CalculateInstallmentQuotaUseCase
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
@@ -28,8 +27,9 @@ data class ExpensesUiState(
 
 class ExpenseViewModel(
     private val repository: ExpenseRepository,
-    private val dao: com.app.gastosimple.core.data.local.GastoSimpleDao,
-    private val prefs: UserPreferencesRepository
+    private val dao: GastoSimpleDao,
+    private val prefs: UserPreferencesRepository,
+    private val calculateQuotaUseCase: CalculateInstallmentQuotaUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ExpensesUiState())
@@ -129,6 +129,70 @@ class ExpenseViewModel(
                         periodId = periodId
                     )
                 )
+                _state.value = _state.value.copy(infoResId = R.string.msg_expense_added)
+                _expenseAddedEvent.emit(Unit)
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(errorResId = R.string.err_save_expense)
+            } finally {
+                _state.value = _state.value.copy(isAddingExpense = false)
+            }
+        }
+    }
+
+    fun addInstallmentExpense(
+        totalAmount: String,
+        concept: String,
+        category: String,
+        userId: Long?,
+        isShared: Boolean,
+        installments: Int,
+        frequency: InstallmentFrequency,
+        isEmergency: Boolean
+    ) {
+        if (_state.value.isAddingExpense) return
+        val periodId = _state.value.activePeriod?.id ?: return
+
+        val totalAmountVal = totalAmount.toBigDecimalOrNull() ?: BigDecimal.ZERO
+        
+        if (totalAmountVal <= BigDecimal.ZERO || installments < 1) {
+            _state.value = _state.value.copy(errorResId = R.string.err_invalid_amount)
+            return
+        }
+
+        _state.value = _state.value.copy(isAddingExpense = true, errorResId = null)
+
+        viewModelScope.launch {
+            try {
+                // 1. Crear el compromiso (InstallmentExpenseEntity)
+                val installment = InstallmentExpenseEntity(
+                    description = concept,
+                    totalAmount = totalAmountVal,
+                    totalInstallments = installments,
+                    frequency = frequency,
+                    isEmergency = isEmergency,
+                    startDate = Date().time
+                )
+                val installmentId = dao.insertInstallment(installment)
+
+                // 2. Calcular la primera cuota
+                val quotaAmount = calculateQuotaUseCase(totalAmountVal, installments)
+
+                // 3. Insertar el primer pago como un gasto vinculado
+                repository.addExpense(
+                    ExpenseEntity(
+                        amount = quotaAmount,
+                        concept = "$concept (Cuota 1/$installments)",
+                        category = category,
+                        userId = userId,
+                        isShared = isShared,
+                        date = Date().time,
+                        recurrence = "NONE",
+                        periodId = periodId,
+                        installmentId = installmentId,
+                        isEmergency = isEmergency
+                    )
+                )
+                
                 _state.value = _state.value.copy(infoResId = R.string.msg_expense_added)
                 _expenseAddedEvent.emit(Unit)
             } catch (e: Exception) {

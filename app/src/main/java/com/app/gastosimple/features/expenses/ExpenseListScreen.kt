@@ -20,7 +20,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.app.gastosimple.R
 import com.app.gastosimple.core.data.local.ExpenseEntity
+import com.app.gastosimple.core.data.local.InstallmentFrequency
 import com.app.gastosimple.core.ui.theme.CyanBlue
+import java.math.BigDecimal
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -135,9 +137,16 @@ fun ExpenseListScreen(viewModel: ExpenseViewModel) {
                     selectedExpense = null
                 } 
             },
-            onConfirm = { amount, concept, category, userId, isShared, recurrence, interval ->
+            onConfirm = { amount, concept, category, userId, isShared, recurrence, interval, isInstallment, totalInstallments, frequency, isEmergency ->
                 if (selectedExpense == null) {
-                    viewModel.addExpense(amount, concept, category, userId, isShared, recurrence, interval)
+                    if (isInstallment) {
+                        viewModel.addInstallmentExpense(
+                            amount, concept, category, userId, isShared, 
+                            totalInstallments ?: 1, frequency ?: InstallmentFrequency.MONTHLY, isEmergency
+                        )
+                    } else {
+                        viewModel.addExpense(amount, concept, category, userId, isShared, recurrence, interval)
+                    }
                 } else {
                     viewModel.editExpense(selectedExpense!!, amount, concept, category, userId, isShared, recurrence, interval)
                 }
@@ -212,7 +221,7 @@ fun ExpenseFormDialog(
     isSaving: Boolean,
     existingExpense: ExpenseEntity? = null,
     onDismiss: () -> Unit,
-    onConfirm: (String, String, String, Long?, Boolean, String, Int?) -> Unit,
+    onConfirm: (String, String, String, Long?, Boolean, String, Int?, Boolean, Int?, InstallmentFrequency?, Boolean) -> Unit,
     onDelete: () -> Unit
 ) {
     var amount by remember { mutableStateOf(existingExpense?.amount?.toPlainString() ?: "") }
@@ -224,6 +233,12 @@ fun ExpenseFormDialog(
     var isRecurrent by remember { mutableStateOf(existingExpense?.recurrence != "NONE" && existingExpense?.recurrence != null) }
     var recurrenceInterval by remember { mutableStateOf<Int?>(existingExpense?.recurrenceInterval) }
     var customInterval by remember { mutableStateOf(existingExpense?.recurrenceInterval?.toString() ?: "") }
+
+    // Épica 5: Cuotas
+    var isInstallment by remember { mutableStateOf(false) }
+    var totalInstallments by remember { mutableStateOf("1") }
+    var installmentFrequency by remember { mutableStateOf(InstallmentFrequency.MONTHLY) }
+    var isEmergency by remember { mutableStateOf(false) }
 
     val categories = listOf(
         stringResource(R.string.cat_services) to "Servicios",
@@ -398,6 +413,85 @@ fun ExpenseFormDialog(
                         }
                     }
                 }
+
+                // Épica 5: Cuotas e Imprevistos
+                if (existingExpense == null) {
+                    item {
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(stringResource(R.string.is_installment_label), style = MaterialTheme.typography.bodyMedium)
+                            Switch(
+                                checked = isInstallment,
+                                onCheckedChange = { isInstallment = it },
+                                enabled = !isSaving
+                            )
+                        }
+                    }
+
+                    if (isInstallment) {
+                        item {
+                            OutlinedTextField(
+                                value = totalInstallments,
+                                onValueChange = { totalInstallments = it },
+                                label = { Text(stringResource(R.string.total_installments_label)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                                enabled = !isSaving
+                            )
+                        }
+                        item {
+                            var expanded by remember { mutableStateOf(false) }
+                            ExposedDropdownMenuBox(
+                                expanded = expanded,
+                                onExpandedChange = { if (!isSaving) expanded = it },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                OutlinedTextField(
+                                    value = if (installmentFrequency == InstallmentFrequency.MONTHLY) 
+                                        stringResource(R.string.mensual) else stringResource(R.string.quincenal),
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    label = { Text(stringResource(R.string.cycle_type_label)) },
+                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                                    modifier = Modifier.menuAnchor().fillMaxWidth(),
+                                    enabled = !isSaving
+                                )
+                                ExposedDropdownMenu(
+                                    expanded = expanded,
+                                    onDismissRequest = { expanded = false }
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.mensual)) },
+                                        onClick = { installmentFrequency = InstallmentFrequency.MONTHLY; expanded = false }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.quincenal)) },
+                                        onClick = { installmentFrequency = InstallmentFrequency.BIWEEKLY; expanded = false }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(stringResource(R.string.is_emergency_label), style = MaterialTheme.typography.bodyMedium)
+                            Switch(
+                                checked = isEmergency,
+                                onCheckedChange = { isEmergency = it },
+                                enabled = !isSaving
+                            )
+                        }
+                    }
+                }
                 
                 if (existingExpense != null) {
                     item {
@@ -414,6 +508,9 @@ fun ExpenseFormDialog(
             }
         },
         confirmButton = {
+            val isValid = amount.isNotBlank() && (amount.toBigDecimalOrNull() ?: BigDecimal.ZERO) > BigDecimal.ZERO && 
+                         (!isInstallment || (totalInstallments.toIntOrNull() ?: 0) >= 1)
+            
             Button(
                 onClick = { 
                     onConfirm(
@@ -423,10 +520,14 @@ fun ExpenseFormDialog(
                         userId, 
                         isShared, 
                         if (isRecurrent) "PERIODIC" else "NONE", 
-                        if (isRecurrent) recurrenceInterval else null
+                        if (isRecurrent) recurrenceInterval else null,
+                        isInstallment,
+                        totalInstallments.toIntOrNull(),
+                        installmentFrequency,
+                        isEmergency
                     ) 
                 },
-                enabled = !isSaving
+                enabled = !isSaving && isValid
             ) {
                 if (isSaving) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)

@@ -105,6 +105,9 @@
     <string name="empty_installments">You have no pending debts or emergencies. Good job!</string>
     <string name="msg_congratulations">Congratulations! You have settled a financial commitment.</string>
     <string name="register_payment">Register Payment</string>
+    <string name="is_installment_label">Is it an installment commitment?</string>
+    <string name="total_installments_label">Number of installments</string>
+    <string name="is_emergency_label">Is it an emergency expense?</string>
 
     <!-- Categories -->
     <string name="cat_rent">Rent</string>

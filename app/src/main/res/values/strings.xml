@@ -105,6 +105,9 @@
     <string name="empty_installments">No tienes deudas ni imprevistos pendientes. ¡Buen trabajo!</string>
     <string name="msg_congratulations">¡Felicidades! Has liquidado un compromiso financiero.</string>
     <string name="register_payment">Registrar Pago</string>
+    <string name="is_installment_label">¿Es un compromiso por cuotas?</string>
+    <string name="total_installments_label">Número de plazos</string>
+    <string name="is_emergency_label">¿Es un gasto de emergencia?</string>
 
     <!-- Categories -->
     <string name="cat_rent">Alquiler</string>

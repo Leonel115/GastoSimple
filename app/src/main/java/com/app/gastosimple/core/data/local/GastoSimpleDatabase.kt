@@ -13,7 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         BudgetPeriodEntity::class,
         InstallmentExpenseEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -40,6 +40,40 @@ abstract class GastoSimpleDatabase : RoomDatabase() {
                 // 2. Agregar nuevas columnas a la tabla de gastos
                 db.execSQL("ALTER TABLE `expenses` ADD COLUMN `installmentId` INTEGER")
                 db.execSQL("ALTER TABLE `expenses` ADD COLUMN `isEmergency` INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Para agregar una ForeignKey en SQLite, es necesario recrear la tabla
+                db.execSQL("""
+                    CREATE TABLE `expenses_new` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+                        `amount` TEXT NOT NULL, 
+                        `concept` TEXT NOT NULL, 
+                        `category` TEXT NOT NULL, 
+                        `userId` INTEGER, 
+                        `isShared` INTEGER NOT NULL, 
+                        `date` INTEGER NOT NULL, 
+                        `recurrence` TEXT NOT NULL, 
+                        `recurrenceInterval` INTEGER, 
+                        `periodId` INTEGER NOT NULL, 
+                        `installmentId` INTEGER, 
+                        `isEmergency` INTEGER NOT NULL, 
+                        `pendingAmount` TEXT, 
+                        `pendingRecurrenceInterval` INTEGER, 
+                        `isPendingDeletion` INTEGER NOT NULL,
+                        FOREIGN KEY(`installmentId`) REFERENCES `installment_expenses`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL
+                    )
+                """.trimIndent())
+
+                db.execSQL("""
+                    INSERT INTO `expenses_new` (id, amount, concept, category, userId, isShared, date, recurrence, recurrenceInterval, periodId, installmentId, isEmergency, pendingAmount, pendingRecurrenceInterval, isPendingDeletion)
+                    SELECT id, amount, concept, category, userId, isShared, date, recurrence, recurrenceInterval, periodId, installmentId, isEmergency, pendingAmount, pendingRecurrenceInterval, isPendingDeletion FROM `expenses`
+                """.trimIndent())
+
+                db.execSQL("DROP TABLE `expenses`")
+                db.execSQL("ALTER TABLE `expenses_new` RENAME TO `expenses`")
             }
         }
     }
