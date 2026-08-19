@@ -54,8 +54,8 @@ class ExpenseViewModel(
                             repository.getUsers(),
                             prefs.plannedBudget
                         ) { expenses, users, plannedBudget ->
-                            val totalSpent = expenses.sumOf { BigDecimal(it.amount) }
-                            val remaining = BigDecimal(period.totalBudget).subtract(totalSpent)
+                            val totalSpent = expenses.fold(BigDecimal.ZERO) { acc, expense -> acc.add(expense.amount) }
+                            val remaining = period.totalBudget.subtract(totalSpent)
                             
                             ExpensesUiState(
                                 activePeriod = period,
@@ -118,7 +118,7 @@ class ExpenseViewModel(
             try {
                 repository.addExpense(
                     ExpenseEntity(
-                        amount = amount,
+                        amount = amountVal,
                         concept = concept,
                         category = category,
                         userId = userId,
@@ -160,7 +160,7 @@ class ExpenseViewModel(
             if (isResetDay) {
                 dao.updateExpense(
                     expense.copy(
-                        amount = newAmount,
+                        amount = newAmount.toBigDecimalOrNull() ?: BigDecimal.ZERO,
                         concept = newConcept,
                         category = newCategory,
                         userId = newUserId,
@@ -210,7 +210,7 @@ class ExpenseViewModel(
         
         viewModelScope.launch {
             if (isResetDay && period != null) {
-                dao.updatePeriod(period.copy(totalBudget = amount))
+                dao.updatePeriod(period.copy(totalBudget = amount.toBigDecimalOrNull() ?: BigDecimal.ZERO))
                 _state.value = _state.value.copy(infoResId = R.string.msg_budget_updated)
             } else {
                 prefs.setPlannedBudget(amount)

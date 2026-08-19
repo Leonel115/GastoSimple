@@ -47,4 +47,20 @@ interface GastoSimpleDao {
 
     @Query("SELECT * FROM budget_periods ORDER BY startDate DESC")
     fun getAllPeriods(): Flow<List<BudgetPeriodEntity>>
+
+    // Installment Expenses (Épica 5)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertInstallment(installment: InstallmentExpenseEntity): Long
+
+    @Update
+    suspend fun updateInstallment(installment: InstallmentExpenseEntity): Unit
+
+    @Query("SELECT * FROM installment_expenses WHERE status = 'ACTIVE' ORDER BY startDate DESC")
+    fun getActiveInstallments(): Flow<List<InstallmentExpenseEntity>>
+
+    @Query("SELECT * FROM installment_expenses WHERE id = :id")
+    suspend fun getInstallmentById(id: Long): InstallmentExpenseEntity?
+
+    @Query("SELECT * FROM expenses WHERE installmentId = :installmentId")
+    fun getPaymentsForInstallment(installmentId: Long): Flow<List<ExpenseEntity>>
 }

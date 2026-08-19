@@ -10,6 +10,7 @@ import com.app.gastosimple.core.data.prefs.UserPreferencesRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.math.BigDecimal
 import java.util.Date
 
 data class SetupState(
@@ -130,7 +131,7 @@ class SetupViewModel(
             
             // Create First Period
             val period = BudgetPeriodEntity(
-                totalBudget = _state.value.budget,
+                totalBudget = _state.value.budget.toBigDecimalOrNull() ?: BigDecimal.ZERO,
                 startDate = Date().time,
                 endDate = null,
                 cycleType = _state.value.cycleType

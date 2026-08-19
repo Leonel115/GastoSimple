@@ -12,6 +12,7 @@ import com.app.gastosimple.core.data.local.GastoSimpleDao
 import kotlinx.coroutines.flow.first
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import java.math.BigDecimal
 import java.util.*
 
 class NotificationWorker(
@@ -47,7 +48,7 @@ class NotificationWorker(
         return Result.success()
     }
 
-    private fun showNotification(concept: String, amount: String) {
+    private fun showNotification(concept: String, amount: BigDecimal) {
         val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val channelId = "expense_alerts"
 
@@ -56,10 +57,11 @@ class NotificationWorker(
             notificationManager.createNotificationChannel(channel)
         }
 
+        val formattedAmount = amount.toPlainString()
         val notification = NotificationCompat.Builder(applicationContext, channelId)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle("Recordatorio de Pago")
-            .setContentText("Hoy vence: $concept ($$amount)")
+            .setContentText("Hoy vence: $concept ($$formattedAmount)")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .build()

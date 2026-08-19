@@ -11,10 +11,22 @@ data class UserEntity(
     val contributionPercentage: Double // 0.0 to 100.0
 )
 
+@Entity(tableName = "installment_expenses")
+data class InstallmentExpenseEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val description: String,
+    val totalAmount: BigDecimal,
+    val totalInstallments: Int,
+    val frequency: InstallmentFrequency,
+    val status: ObligationStatus = ObligationStatus.ACTIVE,
+    val isEmergency: Boolean = false,
+    val startDate: Long
+)
+
 @Entity(tableName = "expenses")
 data class ExpenseEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val amount: String, // Stored as String for BigDecimal precision
+    val amount: BigDecimal,
     val concept: String,
     val category: String,
     val userId: Long?, // Nullable if isShared is true
@@ -23,6 +35,10 @@ data class ExpenseEntity(
     val recurrence: String, // "NONE", "DAILY", "WEEKLY", "MONTHLY", "PERIODIC"
     val recurrenceInterval: Int? = null, // Days for recurrence (15, 30, etc)
     val periodId: Long, // Link to a specific budget period
+
+    // Épica 5: Cuotas e Imprevistos
+    val installmentId: Long? = null,
+    val isEmergency: Boolean = false,
 
     // Diferido / Pending Changes
     val pendingAmount: String? = null,
@@ -33,10 +49,10 @@ data class ExpenseEntity(
 @Entity(tableName = "budget_periods")
 data class BudgetPeriodEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val totalBudget: String,
+    val totalBudget: BigDecimal,
     val startDate: Long,
     val endDate: Long?,
     val cycleType: String, // "QUINCENAL", "MENSUAL"
     val isActive: Boolean = true,
-    val savings: String? = null // Calculated when closed
+    val savings: BigDecimal? = null // Calculated when closed
 )

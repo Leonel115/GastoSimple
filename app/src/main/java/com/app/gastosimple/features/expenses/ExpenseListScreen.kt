@@ -150,7 +150,7 @@ fun ExpenseListScreen(viewModel: ExpenseViewModel) {
 
     if (showBudgetDialog) {
         BudgetEditDialog(
-            currentPlanned = state.plannedBudget ?: state.activePeriod?.totalBudget ?: "",
+            currentPlanned = state.plannedBudget ?: state.activePeriod?.totalBudget?.toPlainString() ?: "",
             onDismiss = { showBudgetDialog = false },
             onConfirm = { 
                 viewModel.updatePlannedBudget(it)
@@ -215,7 +215,7 @@ fun ExpenseFormDialog(
     onConfirm: (String, String, String, Long?, Boolean, String, Int?) -> Unit,
     onDelete: () -> Unit
 ) {
-    var amount by remember { mutableStateOf(existingExpense?.amount ?: "") }
+    var amount by remember { mutableStateOf(existingExpense?.amount?.toPlainString() ?: "") }
     var concept by remember { mutableStateOf(existingExpense?.concept ?: "") }
     var category by remember { mutableStateOf(existingExpense?.category ?: "Servicios") }
     var userId by remember { mutableStateOf<Long?>(existingExpense?.userId ?: users.firstOrNull()?.id) }
