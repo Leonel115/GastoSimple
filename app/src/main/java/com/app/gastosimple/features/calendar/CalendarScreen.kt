@@ -22,13 +22,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.app.gastosimple.R
-import com.app.gastosimple.core.data.local.ExpenseEntity
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalendarScreen(viewModel: CalendarViewModel) {
     val state by viewModel.state.collectAsState()
+    val sheetState = rememberModalBottomSheetState()
+    var showBottomSheet by remember { mutableStateOf(false) }
+    var selectedDay by remember { mutableStateOf<Int?>(null) }
     
     // Calendar math based on displayedDate
     val displayedCalendar = state.displayedDate
@@ -38,19 +40,13 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
     val firstDayOfMonth = (displayedCalendar.clone() as Calendar).apply { set(Calendar.DAY_OF_MONTH, 1) }
     val firstDayOfWeek = firstDayOfMonth.get(Calendar.DAY_OF_WEEK) - 1
 
-    var selectedDay by remember { mutableStateOf<Int?>(null) }
-
     // Today normalized to midnight
     val todayMidnight = remember {
         Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
+            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
         }.timeInMillis
     }
     
-    // Reset selected day when month changes
     LaunchedEffect(state.displayedDate) {
         selectedDay = null
     }
@@ -76,7 +72,6 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
                 .padding(padding)
                 .padding(horizontal = 16.dp)
         ) {
-            // Month Header
             Text(
                 text = monthName.replaceFirstChar { it.uppercase() },
                 style = MaterialTheme.typography.headlineSmall,
@@ -85,7 +80,7 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
                 fontWeight = FontWeight.Bold
             )
 
-            // Static Calendar Grid
+            // Calendar Grid
             Column(modifier = Modifier.fillMaxWidth()) {
                 val daysOfWeek = listOf("D", "L", "M", "M", "J", "V", "S")
                 Row(modifier = Modifier.fillMaxWidth()) {
@@ -111,49 +106,35 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
 
                     items(daysInMonth) { index ->
                         val dayNum = index + 1
+                        val eventsForDay = state.eventsByDate[dayNum] ?: emptyList()
+                        val hasEvent = eventsForDay.isNotEmpty()
+                        val hasEmergency = eventsForDay.any { it.isEmergency }
                         
                         val targetDayCal = (state.displayedDate.clone() as Calendar).apply { 
                             set(Calendar.DAY_OF_MONTH, dayNum)
-                            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                            setMidnight()
                         }
-                        val targetDayMillis = targetDayCal.timeInMillis
-                        val isPastDay = targetDayMillis < todayMidnight
+                        val isPastDay = targetDayCal.timeInMillis < todayMidnight
                         
-                        // Reset Day Logic - Only for today and future
-                        val isResetDay = if (isPastDay) false else state.activePeriod?.let { period ->
+                        val isResetDay = state.activePeriod?.let { period ->
                             val periodStartCal = Calendar.getInstance().apply { 
-                                timeInMillis = period.startDate 
-                                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                                timeInMillis = period.startDate; setMidnight() 
                             }
-                            if (targetDayMillis < periodStartCal.timeInMillis) return@let false
+                            if (targetDayCal.timeInMillis < periodStartCal.timeInMillis) return@let false
                             
                             if (period.cycleType == "MENSUAL") {
                                 targetDayCal.get(Calendar.DAY_OF_MONTH) == periodStartCal.get(Calendar.DAY_OF_MONTH)
                             } else {
-                                val diffDays = ((targetDayMillis - periodStartCal.timeInMillis) / (1000 * 60 * 60 * 24)).toInt()
+                                val diffDays = ((targetDayCal.timeInMillis - periodStartCal.timeInMillis) / (1000 * 60 * 60 * 24)).toInt()
                                 diffDays >= 0 && diffDays % 15 == 0
                             }
                         } ?: false
 
-                        // Events for Day Logic - Only for today and future
-                        val eventsForDay = if (isPastDay) emptyList() else state.recurringExpenses.filter { expense ->
-                            val expenseStartCal = Calendar.getInstance().apply { 
-                                timeInMillis = expense.date 
-                                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-                            }
-                            val interval = expense.recurrenceInterval ?: 0
-                            
-                            if (interval <= 0) {
-                                expenseStartCal.timeInMillis == targetDayMillis
-                            } else {
-                                if (targetDayMillis < expenseStartCal.timeInMillis) return@filter false
-                                val diffDays = ((targetDayMillis - expenseStartCal.timeInMillis) / (1000 * 60 * 60 * 24)).toInt()
-                                diffDays >= 0 && diffDays % interval == 0
-                            }
+                        val eventColor = when {
+                            hasEmergency -> MaterialTheme.colorScheme.error
+                            hasEvent -> getEventColor(eventsForDay)
+                            else -> Color.Transparent
                         }
-
-                        val hasEvent = eventsForDay.isNotEmpty()
-                        val eventColor = getEventColor(eventsForDay)
 
                         Box(
                             modifier = Modifier
@@ -165,12 +146,13 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
                                     shape = MaterialTheme.shapes.small
                                 )
                                 .border(
-                                    if (hasEvent && isResetDay) 2.dp else 1.dp,
-                                    if (hasEvent && isResetDay) eventColor else if (hasEvent) eventColor else Color.LightGray.copy(alpha = 0.5f),
+                                    1.dp,
+                                    if (hasEvent) eventColor else Color.LightGray.copy(alpha = 0.3f),
                                     shape = MaterialTheme.shapes.small
                                 )
                                 .clickable { 
-                                    selectedDay = if (selectedDay == dayNum) null else dayNum 
+                                    selectedDay = dayNum
+                                    if (hasEvent) showBottomSheet = true
                                 },
                             contentAlignment = Alignment.Center
                         ) {
@@ -178,19 +160,10 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
                                 Text(
                                     text = dayNum.toString(),
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = when {
-                                        isPastDay -> Color.Gray
-                                        hasEvent -> eventColor
-                                        else -> MaterialTheme.colorScheme.onSurface
-                                    }
+                                    color = if (isPastDay) Color.Gray else MaterialTheme.colorScheme.onSurface
                                 )
                                 if (isResetDay) {
-                                    Icon(
-                                        imageVector = Icons.Default.Star,
-                                        contentDescription = stringResource(R.string.cal_legend_reset),
-                                        tint = Color.Yellow,
-                                        modifier = Modifier.size(12.dp)
-                                    )
+                                    Icon(Icons.Default.Star, null, tint = Color.Yellow, modifier = Modifier.size(10.dp))
                                 } else if (hasEvent) {
                                     Box(Modifier.size(4.dp).background(eventColor, MaterialTheme.shapes.extraSmall))
                                 }
@@ -200,65 +173,48 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
-            HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(16.dp))
+            CalendarLegend()
+        }
+    }
 
-            if (selectedDay != null) {
-                Text(stringResource(R.string.cal_details_title), style = MaterialTheme.typography.titleMedium)
-                Spacer(Modifier.height(8.dp))
-            }
-            
-            val selectedDayExpenses = if (selectedDay == null) emptyList() else {
-                val targetDayMillis = (state.displayedDate.clone() as Calendar).apply { 
-                    set(Calendar.DAY_OF_MONTH, selectedDay ?: 0)
-                    set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-                }.timeInMillis
-
-                state.recurringExpenses.filter { expense ->
-                    val expenseStartCal = Calendar.getInstance().apply { 
-                        timeInMillis = expense.date 
-                        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-                    }
-                    val interval = expense.recurrenceInterval ?: 0
-                    
-                    if (interval <= 0) {
-                        expenseStartCal.timeInMillis == targetDayMillis
-                    } else {
-                        if (targetDayMillis < expenseStartCal.timeInMillis) return@filter false
-                        val diffDays = ((targetDayMillis - expenseStartCal.timeInMillis) / (1000 * 60 * 60 * 24)).toInt()
-                        diffDays >= 0 && diffDays % interval == 0
-                    }
-                }
-            }
-
-            if (selectedDay == null) {
-                CalendarLegend()
-            } else if (selectedDayExpenses.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(stringResource(R.string.cal_no_events), color = Color.Gray)
-                }
-            } else {
+    if (showBottomSheet && selectedDay != null) {
+        val events = state.eventsByDate[selectedDay!!] ?: emptyList()
+        ModalBottomSheet(
+            onDismissRequest = { showBottomSheet = false },
+            sheetState = sheetState
+        ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                Text(
+                    text = stringResource(R.string.cal_details_title) + " ($selectedDay)",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.height(16.dp))
+                
                 LazyColumn(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                    contentPadding = PaddingValues(bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(selectedDayExpenses) { expense ->
-                        Card(modifier = Modifier.fillMaxWidth()) {
+                    items(events) { event ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (event.isEmergency) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+                                else MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
                             Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
-                                    Text(expense.concept, fontWeight = FontWeight.Bold)
-                                    val categoryLabel = when(expense.category) {
-                                        "Alquiler" -> stringResource(R.string.cat_rent)
-                                        "Alimentación" -> stringResource(R.string.cat_food)
-                                        "Servicios" -> stringResource(R.string.cat_services)
-                                        "Suscripciones" -> stringResource(R.string.cat_subscriptions)
-                                        else -> stringResource(R.string.cat_other)
+                                    Text(event.concept, fontWeight = FontWeight.Bold)
+                                    val typeLabel = when(event.type) {
+                                        CalendarEventType.RECURRING -> stringResource(R.string.one_time_expense)
+                                        CalendarEventType.INSTALLMENT -> stringResource(R.string.total_paid) // Reusing existing strings or add new
+                                        CalendarEventType.EMERGENCY -> stringResource(R.string.emergency_tag)
                                     }
-                                    Text(categoryLabel, style = MaterialTheme.typography.bodySmall)
+                                    Text(typeLabel, style = MaterialTheme.typography.labelSmall)
                                 }
-                                Text("$${expense.amount}", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.titleMedium)
+                                Text("$${event.amount}", color = if (event.isEmergency) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.titleMedium)
                             }
                         }
                     }
@@ -268,11 +224,28 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
     }
 }
 
+private fun Calendar.setMidnight() {
+    set(Calendar.HOUR_OF_DAY, 0)
+    set(Calendar.MINUTE, 0)
+    set(Calendar.SECOND, 0)
+    set(Calendar.MILLISECOND, 0)
+}
+
+private fun getEventColor(events: List<CalendarEvent>): Color {
+    if (events.any { it.isEmergency }) return Color.Red
+    if (events.size > 1) return Color(0xFF4CAF50)
+    val event = events.firstOrNull() ?: return Color.Transparent
+    return when(event.type) {
+        CalendarEventType.INSTALLMENT -> Color(0xFFB928D2) // Purple for installments
+        else -> Color(0xFF1A73E8) // Blue for regular recurring
+    }
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CalendarLegend() {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text(stringResource(R.string.cal_legend_title), style = MaterialTheme.typography.titleMedium, color = Color.White.copy(alpha = 0.8f))
+        Text(stringResource(R.string.cal_legend_title), style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(12.dp))
         
         FlowRow(
@@ -281,11 +254,10 @@ fun CalendarLegend() {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             LegendItem(icon = { Icon(Icons.Default.Star, null, tint = Color.Yellow, modifier = Modifier.size(16.dp)) }, label = stringResource(R.string.cal_legend_reset))
+            LegendItem(color = Color.Red, label = stringResource(R.string.emergency_tag))
             LegendItem(color = Color(0xFF4CAF50), label = stringResource(R.string.cal_legend_multi))
-            LegendItem(color = Color(0xFF0C17E1), label = stringResource(R.string.cal_legend_monthly))
-            LegendItem(color = Color(0xFF00D4D4), label = stringResource(R.string.cal_legend_biweekly))
-            LegendItem(color = Color(0xFFE91E63), label = stringResource(R.string.cal_legend_weekly))
-            LegendItem(color = Color(0xFFB928D2), label = stringResource(R.string.cal_legend_long))
+            LegendItem(color = Color(0xFFB928D2), label = stringResource(R.string.installments_title))
+            LegendItem(color = Color(0xFF1A73E8), label = stringResource(R.string.one_time_expense))
         }
     }
 }
@@ -299,19 +271,6 @@ fun LegendItem(color: Color? = null, icon: (@Composable () -> Unit)? = null, lab
             Box(Modifier.size(14.dp).background(color, MaterialTheme.shapes.extraSmall))
         }
         Spacer(Modifier.width(8.dp))
-        Text(label, style = MaterialTheme.typography.bodySmall, color = Color.LightGray)
-    }
-}
-
-private fun getEventColor(events: List<ExpenseEntity>): Color {
-    if (events.size > 1) return Color(0xFF4CAF50) // Green
-    val event = events.firstOrNull() ?: return Color.Transparent
-    val interval = event.recurrenceInterval ?: 0
-    return when {
-        interval in 16..31 -> Color(0xFF0C17E1) // Blue
-        interval in 8..15 -> Color(0xFF00D4D4) // Cyan
-        interval in 1..7 -> Color(0xFFE91E63) // Pink
-        interval > 31 -> Color(0xFFB928D2) // Purple
-        else -> Color(0xFF1A73E8) // Default primary blue
+        Text(label, style = MaterialTheme.typography.bodySmall)
     }
 }

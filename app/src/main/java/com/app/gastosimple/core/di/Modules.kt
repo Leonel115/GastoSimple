@@ -7,6 +7,7 @@ import com.app.gastosimple.features.expenses.ExpenseRepository
 import com.app.gastosimple.features.setup.SetupViewModel
 import com.app.gastosimple.features.expenses.ExpenseViewModel
 import com.app.gastosimple.features.calendar.CalendarViewModel
+import com.app.gastosimple.features.calendar.GetCalendarEventsUseCase
 import com.app.gastosimple.features.installments.CalculateInstallmentQuotaUseCase
 import com.app.gastosimple.features.installments.GetActiveBalancesUseCase
 import com.app.gastosimple.features.installments.InstallmentViewModel
@@ -35,9 +36,10 @@ val appModule = module {
     factory { CalculateInstallmentQuotaUseCase() }
     factory { GetActiveBalancesUseCase(get()) }
     factory { ProcessPaymentAndCloseUseCase(get()) }
+    factory { GetCalendarEventsUseCase(get()) }
     
     viewModel { SetupViewModel(get(), get()) }
     viewModel { ExpenseViewModel(get(), get(), get(), get()) }
-    viewModel { CalendarViewModel(get()) }
+    viewModel { CalendarViewModel(get(), get()) }
     viewModel { InstallmentViewModel(get(), get()) }
 }
