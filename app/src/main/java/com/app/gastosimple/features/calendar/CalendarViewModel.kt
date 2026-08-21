@@ -55,17 +55,28 @@ class CalendarViewModel(
             val interval = source.intervalDays
             
             if (interval <= 0) {
-                // Evento único o sin intervalo definido (solo se muestra en su fecha original)
+                // Evento único
                 if (eventCal.timeInMillis in startOfMonth.timeInMillis..endOfMonth.timeInMillis) {
                     projected.add(source.toCalendarEvent(eventCal.timeInMillis))
                 }
             } else {
-                // Proyectar recurrencias
-                while (eventCal.timeInMillis <= endOfMonth.timeInMillis) {
-                    if (eventCal.timeInMillis >= startOfMonth.timeInMillis) {
-                        projected.add(source.toCalendarEvent(eventCal.timeInMillis))
+                if (source.type == CalendarEventType.INSTALLMENT && source.totalInstallments != null) {
+                    // Proyectar Cuotas (Finito)
+                    for (i in 0 until source.totalInstallments) {
+                        if (eventCal.timeInMillis in startOfMonth.timeInMillis..endOfMonth.timeInMillis) {
+                            projected.add(source.toCalendarEvent(eventCal.timeInMillis))
+                        }
+                        if (eventCal.timeInMillis > endOfMonth.timeInMillis) break
+                        eventCal.add(Calendar.DAY_OF_YEAR, interval)
                     }
-                    eventCal.add(Calendar.DAY_OF_YEAR, interval)
+                } else {
+                    // Proyectar Recurrentes (Infinito)
+                    while (eventCal.timeInMillis <= endOfMonth.timeInMillis) {
+                        if (eventCal.timeInMillis >= startOfMonth.timeInMillis) {
+                            projected.add(source.toCalendarEvent(eventCal.timeInMillis))
+                        }
+                        eventCal.add(Calendar.DAY_OF_YEAR, interval)
+                    }
                 }
             }
         }

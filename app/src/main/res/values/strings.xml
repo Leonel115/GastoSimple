@@ -87,6 +87,7 @@
     <string name="err_multi_user_empty_name">Todos los usuarios deben tener un nombre</string>
     <string name="err_invalid_budget">El presupuesto debe ser un número mayor a 0</string>
     <string name="err_sum_percentage">La suma de porcentajes debe ser exactamente 100%%</string>
+    <string name="err_min_installments">Un compromiso a plazos requiere al menos 2 cuotas</string>
 
     <string name="msg_expense_added">Gasto guardado exitosamente</string>
     <string name="msg_expense_edited">Gasto editado exitosamente</string>

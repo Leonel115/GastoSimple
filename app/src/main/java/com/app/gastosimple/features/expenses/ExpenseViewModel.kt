@@ -154,8 +154,9 @@ class ExpenseViewModel(
 
         val totalAmountVal = totalAmount.toBigDecimalOrNull() ?: BigDecimal.ZERO
         
-        if (totalAmountVal <= BigDecimal.ZERO || installments < 1) {
-            _state.value = _state.value.copy(errorResId = R.string.err_invalid_amount)
+        if (totalAmountVal <= BigDecimal.ZERO || installments < 2) {
+            val errorRes = if (installments < 2) R.string.err_min_installments else R.string.err_invalid_amount
+            _state.value = _state.value.copy(errorResId = errorRes)
             return
         }
 

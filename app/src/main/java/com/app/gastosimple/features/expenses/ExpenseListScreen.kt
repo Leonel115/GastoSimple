@@ -509,7 +509,7 @@ fun ExpenseFormDialog(
         },
         confirmButton = {
             val isValid = amount.isNotBlank() && (amount.toBigDecimalOrNull() ?: BigDecimal.ZERO) > BigDecimal.ZERO && 
-                         (!isInstallment || (totalInstallments.toIntOrNull() ?: 0) >= 1)
+                         (!isInstallment || (totalInstallments.toIntOrNull() ?: 0) >= 2)
             
             Button(
                 onClick = { 
