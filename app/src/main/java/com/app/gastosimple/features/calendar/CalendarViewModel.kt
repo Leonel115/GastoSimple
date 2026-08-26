@@ -10,7 +10,7 @@ import kotlinx.coroutines.launch
 import java.util.Calendar
 
 data class CalendarUiState(
-    val recurringExpenses: List<ExpenseEntity> = emptyList(),
+    val allExpenses: List<ExpenseEntity> = emptyList(),
     val activePeriod: BudgetPeriodEntity? = null,
     val displayedDate: Calendar = Calendar.getInstance(),
     val isLoading: Boolean = true
@@ -21,12 +21,12 @@ class CalendarViewModel(private val dao: GastoSimpleDao) : ViewModel() {
     private val _displayedDate = MutableStateFlow(Calendar.getInstance())
     
     val state: StateFlow<CalendarUiState> = combine(
-        dao.getRecurringExpenses(),
+        dao.getAllNonDeletedExpenses(),
         dao.getActivePeriod(),
         _displayedDate
     ) { expenses, period, displayedDate ->
         CalendarUiState(
-            recurringExpenses = expenses,
+            allExpenses = expenses,
             activePeriod = period,
             displayedDate = displayedDate,
             isLoading = false

@@ -5,7 +5,7 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [UserEntity::class, ExpenseEntity::class, BudgetPeriodEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class GastoSimpleDatabase : RoomDatabase() {

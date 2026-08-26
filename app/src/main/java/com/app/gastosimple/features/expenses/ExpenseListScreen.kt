@@ -23,6 +23,7 @@ import com.app.gastosimple.core.data.local.ExpenseEntity
 import com.app.gastosimple.core.ui.theme.CyanBlue
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.TimeZone
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 
@@ -135,11 +136,11 @@ fun ExpenseListScreen(viewModel: ExpenseViewModel) {
                     selectedExpense = null
                 } 
             },
-            onConfirm = { amount, concept, category, userId, isShared, recurrence, interval ->
+            onConfirm = { amount, concept, category, userId, isShared, recurrence, interval, date ->
                 if (selectedExpense == null) {
-                    viewModel.addExpense(amount, concept, category, userId, isShared, recurrence, interval)
+                    viewModel.addExpense(amount, concept, category, userId, isShared, recurrence, interval, date)
                 } else {
-                    viewModel.editExpense(selectedExpense!!, amount, concept, category, userId, isShared, recurrence, interval)
+                    viewModel.editExpense(selectedExpense!!, amount, concept, category, userId, isShared, recurrence, interval, date)
                 }
             },
             onDelete = {
@@ -162,7 +163,7 @@ fun ExpenseListScreen(viewModel: ExpenseViewModel) {
 
 @Composable
 fun ExpenseItem(expense: ExpenseEntity, userName: String, onClick: () -> Unit) {
-    val dateFormat = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault())
+    val dateFormat = SimpleDateFormat("dd MMM", Locale.getDefault())
     val isPending = expense.pendingAmount != null || expense.pendingRecurrenceInterval != null || expense.isPendingDeletion
     
     Card(
@@ -212,7 +213,7 @@ fun ExpenseFormDialog(
     isSaving: Boolean,
     existingExpense: ExpenseEntity? = null,
     onDismiss: () -> Unit,
-    onConfirm: (String, String, String, Long?, Boolean, String, Int?) -> Unit,
+    onConfirm: (String, String, String, Long?, Boolean, String, Int?, Long) -> Unit,
     onDelete: () -> Unit
 ) {
     var amount by remember { mutableStateOf(existingExpense?.amount ?: "") }
@@ -225,6 +226,23 @@ fun ExpenseFormDialog(
     var recurrenceInterval by remember { mutableStateOf<Int?>(existingExpense?.recurrenceInterval) }
     var customInterval by remember { mutableStateOf(existingExpense?.recurrenceInterval?.toString() ?: "") }
 
+    var selectedDate by remember { 
+        val initialDate = existingExpense?.date ?: System.currentTimeMillis()
+        val calendar = Calendar.getInstance()
+        calendar.timeInMillis = initialDate
+        
+        val utcCalendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+        utcCalendar.set(
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH),
+            0, 0, 0
+        )
+        utcCalendar.set(Calendar.MILLISECOND, 0)
+        mutableStateOf(utcCalendar.timeInMillis)
+    }
+    var showDatePicker by remember { mutableStateOf(false) }
+
     val categories = listOf(
         stringResource(R.string.cat_services) to "Servicios",
         stringResource(R.string.cat_rent) to "Alquiler",
@@ -234,15 +252,33 @@ fun ExpenseFormDialog(
     )
 
     val presets = when (category) {
-        "Alquiler" -> listOf(15, 20, 30)
-        "Suscripciones" -> listOf(15, 30)
-        else -> listOf(7, 15, 30)
+        "Alquiler" -> listOf(15 to stringResource(R.string.recurrence_biweekly), 30 to stringResource(R.string.recurrence_monthly))
+        "Suscripciones" -> listOf(15 to stringResource(R.string.recurrence_biweekly), 30 to stringResource(R.string.recurrence_monthly))
+        else -> listOf(7 to stringResource(R.string.recurrence_weekly), 15 to stringResource(R.string.recurrence_biweekly), 30 to stringResource(R.string.recurrence_monthly))
     }
 
     LaunchedEffect(category) {
         if (category == "Suscripciones" || category == "Alquiler" || category == "Servicios") {
             isRecurrent = true
             if (recurrenceInterval == null) recurrenceInterval = 30
+        }
+    }
+
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDate)
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    selectedDate = datePickerState.selectedDateMillis ?: selectedDate
+                    showDatePicker = false
+                }) { Text(stringResource(R.string.save)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.cancel)) }
+            }
+        ) {
+            DatePicker(state = datePickerState)
         }
     }
 
@@ -282,6 +318,22 @@ fun ExpenseFormDialog(
                     )
                     if (isConceptError && errorResId != null) {
                         Text(stringResource(errorResId), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+
+                // Date Picker Button
+                item {
+                    val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).apply {
+                        timeZone = TimeZone.getTimeZone("UTC")
+                    }
+                    OutlinedButton(
+                        onClick = { if (!isSaving) showDatePicker = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("${stringResource(R.string.expense_date_label)}: ${sdf.format(Date(selectedDate))}")
                     }
                 }
                 item {
@@ -346,14 +398,14 @@ fun ExpenseFormDialog(
                     item {
                         Text(stringResource(R.string.recurrence_interval_label), style = MaterialTheme.typography.labelLarge)
                         FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            presets.forEach { days ->
+                            presets.forEach { (days, label) ->
                                 FilterChip(
                                     selected = recurrenceInterval == days,
                                     onClick = { 
                                         recurrenceInterval = days
                                         customInterval = days.toString()
                                     },
-                                    label = { Text(stringResource(R.string.days_suffix, days)) },
+                                    label = { Text(label) },
                                     enabled = !isSaving
                                 )
                             }
@@ -416,14 +468,20 @@ fun ExpenseFormDialog(
         confirmButton = {
             Button(
                 onClick = { 
+                    val recurrenceType = when {
+                        !isRecurrent -> "NONE"
+                        recurrenceInterval == 30 -> "MONTHLY"
+                        else -> "PERIODIC"
+                    }
                     onConfirm(
                         amount, 
                         concept, 
                         category, 
                         userId, 
                         isShared, 
-                        if (isRecurrent) "PERIODIC" else "NONE", 
-                        if (isRecurrent) recurrenceInterval else null
+                        recurrenceType, 
+                        recurrenceInterval,
+                        selectedDate
                     ) 
                 },
                 enabled = !isSaving

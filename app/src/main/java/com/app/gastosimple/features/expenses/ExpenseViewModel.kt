@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.util.Calendar
+import java.util.TimeZone
 import java.util.Date
 
 data class ExpensesUiState(
@@ -45,7 +46,10 @@ class ExpenseViewModel(
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private fun loadData() {
         viewModelScope.launch {
-            // Usamos flatMapLatest para evitar suscripciones anidadas (causa de crashes)
+            val todayMidnight = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
+
             repository.getActivePeriod()
                 .flatMapLatest { period ->
                     if (period != null) {
@@ -54,12 +58,28 @@ class ExpenseViewModel(
                             repository.getUsers(),
                             prefs.plannedBudget
                         ) { expenses, users, plannedBudget ->
-                            val totalSpent = expenses.sumOf { BigDecimal(it.amount) }
+                            // Filtrar eliminados
+                            val activeExpenses = expenses.filter { !it.isDeleted }
+                            
+                            // Cálculo de saldo: Solo restar si fecha <= hoy
+                            val totalSpent = activeExpenses
+                                .filter { it.date <= todayMidnight }
+                                .sumOf { BigDecimal(it.amount) }
+                            
                             val remaining = BigDecimal(period.totalBudget).subtract(totalSpent)
                             
+                            // Filtrar lista para la UI: Recurrentes + Únicos de HOY
+                            val uiExpenses = activeExpenses.filter {
+                                val expenseCal = Calendar.getInstance().apply { 
+                                    timeInMillis = it.date
+                                    set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                                }
+                                it.recurrence != "NONE" || expenseCal.timeInMillis == todayMidnight
+                            }
+
                             ExpensesUiState(
                                 activePeriod = period,
-                                expenses = expenses,
+                                expenses = uiExpenses,
                                 users = users,
                                 isLoading = false,
                                 remainingBudget = remaining.toPlainString(),
@@ -85,7 +105,8 @@ class ExpenseViewModel(
         userId: Long?,
         isShared: Boolean,
         recurrence: String,
-        recurrenceInterval: Int?
+        recurrenceInterval: Int?,
+        date: Long // Nueva fecha seleccionada
     ) {
         if (_state.value.isAddingExpense) return
         
@@ -115,6 +136,14 @@ class ExpenseViewModel(
         _state.value = _state.value.copy(isAddingExpense = true, errorResId = null, errorParam = null)
 
         viewModelScope.launch {
+            val utcCalendar = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+                timeInMillis = date
+            }
+            val normalizedDate = Calendar.getInstance().apply {
+                set(utcCalendar.get(Calendar.YEAR), utcCalendar.get(Calendar.MONTH), utcCalendar.get(Calendar.DAY_OF_MONTH), 0, 0, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
+            
             try {
                 repository.addExpense(
                     ExpenseEntity(
@@ -123,7 +152,7 @@ class ExpenseViewModel(
                         category = category,
                         userId = userId,
                         isShared = isShared,
-                        date = Date().time,
+                        date = normalizedDate,
                         recurrence = recurrence,
                         recurrenceInterval = recurrenceInterval,
                         periodId = periodId
@@ -147,7 +176,8 @@ class ExpenseViewModel(
         newUserId: Long?,
         newIsShared: Boolean,
         newRecurrence: String,
-        newRecurrenceInterval: Int?
+        newRecurrenceInterval: Int?,
+        newDate: Long // Nueva fecha seleccionada
     ) {
         if (newConcept.isBlank()) {
             _state.value = _state.value.copy(errorResId = R.string.err_empty_concept)
@@ -157,6 +187,14 @@ class ExpenseViewModel(
         val isResetDay = isResetDayForExpense(expense)
         
         viewModelScope.launch {
+            val utcCalendar = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+                timeInMillis = newDate
+            }
+            val normalizedDate = Calendar.getInstance().apply {
+                set(utcCalendar.get(Calendar.YEAR), utcCalendar.get(Calendar.MONTH), utcCalendar.get(Calendar.DAY_OF_MONTH), 0, 0, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
+
             if (isResetDay) {
                 dao.updateExpense(
                     expense.copy(
@@ -165,6 +203,7 @@ class ExpenseViewModel(
                         category = newCategory,
                         userId = newUserId,
                         isShared = newIsShared,
+                        date = normalizedDate,
                         recurrence = newRecurrence,
                         recurrenceInterval = newRecurrenceInterval,
                         pendingAmount = null,
@@ -180,7 +219,8 @@ class ExpenseViewModel(
                         pendingRecurrenceInterval = newRecurrenceInterval,
                         category = newCategory,
                         userId = newUserId,
-                        isShared = newIsShared
+                        isShared = newIsShared,
+                        date = normalizedDate
                     )
                 )
                 _state.value = _state.value.copy(infoResId = R.string.msg_pending_changes)
@@ -194,7 +234,8 @@ class ExpenseViewModel(
         
         viewModelScope.launch {
             if (isResetDay) {
-                dao.deleteExpense(expense)
+                // Soft delete instead of physical delete
+                dao.updateExpense(expense.copy(isDeleted = true))
                 _state.value = _state.value.copy(infoResId = R.string.msg_expense_deleted)
             } else {
                 dao.updateExpense(expense.copy(isPendingDeletion = true))
@@ -222,23 +263,12 @@ class ExpenseViewModel(
 
     private fun isResetDayForPeriod(period: BudgetPeriodEntity): Boolean {
         val calendar = Calendar.getInstance()
-        val todayMillis = calendar.apply { 
-            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) 
-        }.timeInMillis
+        val dayOfMonth = calendar.get(Calendar.DAY_OF_MONTH)
         
-        val startCal = Calendar.getInstance().apply { 
-            timeInMillis = period.startDate
-            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-        }
-        
-        if (startCal.timeInMillis == todayMillis) return true
-        
-        if (period.cycleType == "MENSUAL") {
-            return calendar.get(Calendar.DAY_OF_MONTH) == startCal.get(Calendar.DAY_OF_MONTH)
+        return if (period.cycleType == "MENSUAL") {
+            dayOfMonth == 1
         } else {
-            val diffMillis = todayMillis - startCal.timeInMillis
-            val diffDays = (diffMillis / (1000 * 60 * 60 * 24)).toInt()
-            return diffDays >= 0 && diffDays % 15 == 0
+            dayOfMonth == 1 || dayOfMonth == 15
         }
     }
 
@@ -251,17 +281,22 @@ class ExpenseViewModel(
             set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) 
         }.timeInMillis
         
-        val expenseCal = Calendar.getInstance().apply { 
+        val expenseStartCal = Calendar.getInstance().apply { 
             timeInMillis = expense.date
             set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
         }
         
-        if (expenseCal.timeInMillis == todayMillis) return true
+        if (expenseStartCal.timeInMillis == todayMillis) return true
+        
+        if (expense.recurrence == "MONTHLY") {
+            // El reset de un gasto mensual es el mismo día del mes de creación
+            return calendar.get(Calendar.DAY_OF_MONTH) == expenseStartCal.get(Calendar.DAY_OF_MONTH)
+        }
         
         val interval = expense.recurrenceInterval ?: 0
         if (interval <= 0) return false
         
-        val diffMillis = todayMillis - expenseCal.timeInMillis
+        val diffMillis = todayMillis - expenseStartCal.timeInMillis
         val diffDays = (diffMillis / (1000 * 60 * 60 * 24)).toInt()
         
         return diffDays >= 0 && diffDays % interval == 0

@@ -1,5 +1,10 @@
 package com.app.gastosimple.features.calendar
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -119,36 +124,43 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
                         val targetDayMillis = targetDayCal.timeInMillis
                         val isPastDay = targetDayMillis < todayMidnight
                         
-                        // Reset Day Logic - Only for today and future
+                        // Reset Day Logic - FIXED DAYS 1 and 15
                         val isResetDay = if (isPastDay) false else state.activePeriod?.let { period ->
-                            val periodStartCal = Calendar.getInstance().apply { 
-                                timeInMillis = period.startDate 
-                                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-                            }
-                            if (targetDayMillis < periodStartCal.timeInMillis) return@let false
-                            
                             if (period.cycleType == "MENSUAL") {
-                                targetDayCal.get(Calendar.DAY_OF_MONTH) == periodStartCal.get(Calendar.DAY_OF_MONTH)
+                                dayNum == 1
                             } else {
-                                val diffDays = ((targetDayMillis - periodStartCal.timeInMillis) / (1000 * 60 * 60 * 24)).toInt()
-                                diffDays >= 0 && diffDays % 15 == 0
+                                dayNum == 1 || dayNum == 15
                             }
                         } ?: false
 
-                        // Events for Day Logic - Only for today and future
-                        val eventsForDay = if (isPastDay) emptyList() else state.recurringExpenses.filter { expense ->
+                        // Events for Day Logic
+                        val eventsForDay = state.allExpenses
+                            .filter { !it.isDeleted } // Solo no eliminados
+                            .filter { expense ->
                             val expenseStartCal = Calendar.getInstance().apply { 
                                 timeInMillis = expense.date 
                                 set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
                             }
-                            val interval = expense.recurrenceInterval ?: 0
                             
-                            if (interval <= 0) {
-                                expenseStartCal.timeInMillis == targetDayMillis
+                            if (targetDayMillis < expenseStartCal.timeInMillis) return@filter false
+
+                            if (expense.recurrence == "MONTHLY") {
+                                // Mismo día del mes, manejando meses cortos
+                                val targetDayOfMonth = targetDayCal.get(Calendar.DAY_OF_MONTH)
+                                val originalDayOfMonth = expenseStartCal.get(Calendar.DAY_OF_MONTH)
+                                
+                                val maxDaysInTargetMonth = targetDayCal.getActualMaximum(Calendar.DAY_OF_MONTH)
+                                val effectiveOriginalDay = if (originalDayOfMonth > maxDaysInTargetMonth) maxDaysInTargetMonth else originalDayOfMonth
+                                
+                                targetDayOfMonth == effectiveOriginalDay
                             } else {
-                                if (targetDayMillis < expenseStartCal.timeInMillis) return@filter false
-                                val diffDays = ((targetDayMillis - expenseStartCal.timeInMillis) / (1000 * 60 * 60 * 24)).toInt()
-                                diffDays >= 0 && diffDays % interval == 0
+                                val interval = expense.recurrenceInterval ?: 0
+                                if (interval <= 0) {
+                                    expenseStartCal.timeInMillis == targetDayMillis
+                                } else {
+                                    val diffDays = ((targetDayMillis - expenseStartCal.timeInMillis) / (1000 * 60 * 60 * 24)).toInt()
+                                    diffDays >= 0 && diffDays % interval == 0
+                                }
                             }
                         }
 
@@ -210,24 +222,34 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
             }
             
             val selectedDayExpenses = if (selectedDay == null) emptyList() else {
-                val targetDayMillis = (state.displayedDate.clone() as Calendar).apply { 
+                val targetDayCal = (state.displayedDate.clone() as Calendar).apply { 
                     set(Calendar.DAY_OF_MONTH, selectedDay ?: 0)
                     set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-                }.timeInMillis
+                }
+                val targetDayMillis = targetDayCal.timeInMillis
 
-                state.recurringExpenses.filter { expense ->
+                state.allExpenses.filter { expense ->
                     val expenseStartCal = Calendar.getInstance().apply { 
                         timeInMillis = expense.date 
                         set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
                     }
-                    val interval = expense.recurrenceInterval ?: 0
                     
-                    if (interval <= 0) {
-                        expenseStartCal.timeInMillis == targetDayMillis
+                    if (targetDayMillis < expenseStartCal.timeInMillis) return@filter false
+
+                    if (expense.recurrence == "MONTHLY") {
+                        val targetDayOfMonth = targetDayCal.get(Calendar.DAY_OF_MONTH)
+                        val originalDayOfMonth = expenseStartCal.get(Calendar.DAY_OF_MONTH)
+                        val maxDaysInTargetMonth = targetDayCal.getActualMaximum(Calendar.DAY_OF_MONTH)
+                        val effectiveOriginalDay = if (originalDayOfMonth > maxDaysInTargetMonth) maxDaysInTargetMonth else originalDayOfMonth
+                        targetDayOfMonth == effectiveOriginalDay
                     } else {
-                        if (targetDayMillis < expenseStartCal.timeInMillis) return@filter false
-                        val diffDays = ((targetDayMillis - expenseStartCal.timeInMillis) / (1000 * 60 * 60 * 24)).toInt()
-                        diffDays >= 0 && diffDays % interval == 0
+                        val interval = expense.recurrenceInterval ?: 0
+                        if (interval <= 0) {
+                            expenseStartCal.timeInMillis == targetDayMillis
+                        } else {
+                            val diffDays = ((targetDayMillis - expenseStartCal.timeInMillis) / (1000 * 60 * 60 * 24)).toInt()
+                            diffDays >= 0 && diffDays % interval == 0
+                        }
                     }
                 }
             }
@@ -307,8 +329,10 @@ private fun getEventColor(events: List<ExpenseEntity>): Color {
     if (events.size > 1) return Color(0xFF4CAF50) // Green
     val event = events.firstOrNull() ?: return Color.Transparent
     val interval = event.recurrenceInterval ?: 0
+    val recurrence = event.recurrence
+    
     return when {
-        interval in 16..31 -> Color(0xFF0C17E1) // Blue
+        recurrence == "MONTHLY" || interval in 16..31 -> Color(0xFF0C17E1) // Blue
         interval in 8..15 -> Color(0xFF00D4D4) // Cyan
         interval in 1..7 -> Color(0xFFE91E63) // Pink
         interval > 31 -> Color(0xFFB928D2) // Purple

@@ -45,6 +45,7 @@
     <string name="expenses_title">Gastos</string>
     <string name="add_expense">Nuevo Gasto</string>
     <string name="edit_expense">Editar Gasto</string>
+    <string name="expense_date_label">Fecha del gasto</string>
     <string name="delete_expense">Eliminar Gasto</string>
     <string name="empty_expenses">No hay gastos registrados</string>
     <string name="amount_hint">Monto</string>
@@ -58,7 +59,10 @@
 
     <!-- Recurrence -->
     <string name="is_recurrent_label">¿Es un gasto recurrente?</string>
-    <string name="recurrence_interval_label">Plazo de pago (días)</string>
+    <string name="recurrence_interval_label">Plazo de pago</string>
+    <string name="recurrence_weekly">Semanal</string>
+    <string name="recurrence_biweekly">Quincenal</string>
+    <string name="recurrence_monthly">Mensual</string>
     <string name="custom_days_hint">Días personalizados</string>
     <string name="days_suffix">%s días</string>
     <string name="one_time_expense">Gasto único</string>

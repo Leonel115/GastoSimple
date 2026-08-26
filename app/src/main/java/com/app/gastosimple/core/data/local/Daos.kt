@@ -32,7 +32,10 @@ interface GastoSimpleDao {
     @Query("SELECT * FROM expenses WHERE periodId = :periodId ORDER BY date DESC")
     fun getExpensesByPeriod(periodId: Long): Flow<List<ExpenseEntity>>
 
-    @Query("SELECT * FROM expenses WHERE recurrence != 'NONE'")
+    @Query("SELECT * FROM expenses WHERE isDeleted = 0")
+    fun getAllNonDeletedExpenses(): Flow<List<ExpenseEntity>>
+
+    @Query("SELECT * FROM expenses WHERE recurrence != 'NONE' AND isDeleted = 0")
     fun getRecurringExpenses(): Flow<List<ExpenseEntity>>
 
     // Budget Periods
