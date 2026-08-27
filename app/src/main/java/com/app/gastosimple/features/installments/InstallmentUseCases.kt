@@ -4,9 +4,7 @@ import com.app.gastosimple.core.data.local.ExpenseEntity
 import com.app.gastosimple.core.data.local.GastoSimpleDao
 import com.app.gastosimple.core.data.local.ObligationStatus
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -18,14 +16,20 @@ class CalculateInstallmentQuotaUseCase {
     }
 }
 
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class GetActiveBalancesUseCase(private val dao: GastoSimpleDao) {
     operator fun invoke(): Flow<List<PendingBalance>> {
-        return dao.getActiveInstallments().map { installments ->
-            installments.map { installment ->
-                val payments = dao.getPaymentsForInstallment(installment.id).first()
-                val totalPaid = payments.sumOf { it.amount }
-                PendingBalance.create(installment, totalPaid)
+        return dao.getActiveInstallments().flatMapLatest { installments ->
+            if (installments.isEmpty()) return@flatMapLatest flowOf(emptyList())
+            
+            val balanceFlows = installments.map { installment ->
+                dao.getPaymentsForInstallment(installment.id).map { payments ->
+                    val totalPaid = payments.sumOf { it.amount }
+                    PendingBalance.create(installment, totalPaid)
+                }
             }
+            
+            combine(balanceFlows) { it.toList() }
         }
     }
 }
