@@ -21,6 +21,7 @@ import com.app.gastosimple.R
 import com.app.gastosimple.core.data.prefs.UserPreferencesRepository
 import com.app.gastosimple.features.calendar.CalendarScreen
 import com.app.gastosimple.features.expenses.ExpenseListScreen
+import com.app.gastosimple.features.settings.AjustesScreen
 import com.app.gastosimple.features.setup.SetupScreen
 import com.app.gastosimple.features.dashboard.ui.DashboardScreen
 import org.koin.androidx.compose.koinViewModel
@@ -73,13 +74,12 @@ fun NavGraph() {
                 DashboardScreen()
             }
             composable(Screen.Settings.route) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(stringResource(R.string.nav_settings))
-                }
+                AjustesScreen()
             }
         }
     }
 }
+
 
 @Composable
 fun BottomBar(navController: androidx.navigation.NavHostController) {

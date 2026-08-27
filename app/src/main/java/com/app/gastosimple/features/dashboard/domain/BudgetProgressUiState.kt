@@ -12,8 +12,8 @@ data class CategoryProgress(
 )
 
 /**
- * Representa el estado de UI para el panel de progreso del presupuesto.
- * HU-06: Panel Visual de Porcentaje Consumido con desglose por categorías.
+ * Representa el estado de UI para el panel de progreso del presupuesto y filtrado temporal.
+ * HU-06: Panel Visual de Porcentaje Consumido con desglose por categorías y selector temporal.
  */
 data class BudgetProgressUiState(
     val budgetTotal: BigDecimal = BigDecimal.ZERO,
@@ -23,5 +23,11 @@ data class BudgetProgressUiState(
     val remainingPercentage: Float = 0f,
     val isOverBudget: Boolean = false,
     val isEmpty: Boolean = true,
-    val categories: List<CategoryProgress> = emptyList()
+    val categories: List<CategoryProgress> = emptyList(),
+    val selectedFilterMode: DashboardFilterMode = DashboardFilterMode.MONTHLY,
+    val selectedMonth: Int = 8,
+    val selectedYear: Int = 2026,
+    val availableYears: List<Int> = listOf(2024, 2025, 2026),
+    val isPastPeriod: Boolean = false
 )
+

@@ -20,8 +20,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.app.gastosimple.R
 import com.app.gastosimple.core.data.local.ExpenseEntity
-import com.app.gastosimple.core.ui.theme.CyanBlue
+import com.app.gastosimple.core.ui.formatAsCurrency
+import com.app.gastosimple.core.ui.toCategoryStringRes
 import java.text.SimpleDateFormat
+
+
+
 import java.util.*
 import java.util.TimeZone
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -53,7 +57,11 @@ fun ExpenseListScreen(viewModel: ExpenseViewModel) {
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(onClick = { showForm = true }, containerColor = CyanBlue, contentColor = Color.Black) {
+            FloatingActionButton(
+                onClick = { showForm = true },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_expense))
             }
         }
@@ -62,39 +70,59 @@ fun ExpenseListScreen(viewModel: ExpenseViewModel) {
             state.activePeriod?.let {
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(stringResource(R.string.budget_label), style = MaterialTheme.typography.labelLarge)
+                            Text(
+                                stringResource(R.string.budget_label),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
+                            )
                             Spacer(Modifier.width(8.dp))
                             Icon(
                                 Icons.Default.Edit,
                                 contentDescription = stringResource(R.string.edit),
-                                tint = CyanBlue,
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(16.dp).clickable { showBudgetDialog = true }
                             )
                         }
-                        Text("$${it.totalBudget}", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                        Text(
+                            it.totalBudget.toDouble().formatAsCurrency(),
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
                         
                         state.plannedBudget?.let { planned ->
                             Text(
                                 stringResource(R.string.planned_budget_info, planned),
                                 style = MaterialTheme.typography.labelSmall, 
-                                color = CyanBlue
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
                             )
                         }
 
                         Spacer(Modifier.height(8.dp))
-                        Text(stringResource(R.string.remaining_budget), style = MaterialTheme.typography.labelLarge)
-                        val remainingVal = state.remainingBudget.toDoubleOrNull() ?: 0.0
-                        Text("$${state.remainingBudget}", 
-                            style = MaterialTheme.typography.titleLarge, 
-                            color = if (remainingVal < 0) MaterialTheme.colorScheme.error else Color.White
+                        Text(
+                            stringResource(R.string.remaining_budget),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
                         )
+                        val remainingVal = state.remainingBudget.toDoubleOrNull() ?: 0.0
+                        Text(
+                            remainingVal.formatAsCurrency(), 
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = if (remainingVal < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+
                     }
                 }
             }
+
 
             if (state.isLoading) {
                 Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -172,37 +200,64 @@ fun ExpenseItem(expense: ExpenseEntity, userName: String, onClick: () -> Unit) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(expense.concept, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        expense.concept,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                     if (isPending) {
                         Spacer(Modifier.width(8.dp))
-                        Surface(color = CyanBlue.copy(alpha = 0.1f), shape = CircleShape) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                            shape = CircleShape
+                        ) {
                             Text(
                                 stringResource(R.string.pending_tag), 
                                 style = MaterialTheme.typography.labelSmall, 
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), 
-                                color = CyanBlue
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    val categoryLabel = when(expense.category) {
-                        "Alquiler" -> stringResource(R.string.cat_rent)
-                        "Alimentación" -> stringResource(R.string.cat_food)
-                        "Servicios" -> stringResource(R.string.cat_services)
-                        "Suscripciones" -> stringResource(R.string.cat_subscriptions)
-                        else -> stringResource(R.string.cat_other)
-                    }
-                    Text(categoryLabel, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
-                    Text(" • ", style = MaterialTheme.typography.bodySmall)
-                    Text(userName, style = MaterialTheme.typography.bodySmall)
+                    val categoryLabel = stringResource(expense.category.toCategoryStringRes())
+                    Text(
+                        categoryLabel,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        " • ",
+
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        userName,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
-                Text(dateFormat.format(Date(expense.date)), style = MaterialTheme.typography.bodySmall)
+                Text(
+                    dateFormat.format(Date(expense.date)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-            Text("$${expense.amount}", style = MaterialTheme.typography.titleLarge, color = if (expense.isPendingDeletion) Color.Gray else MaterialTheme.colorScheme.primary)
+            Text(
+                expense.amount.toDouble().formatAsCurrency(),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = if (expense.isPendingDeletion) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.primary
+            )
+
         }
     }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -212,6 +267,7 @@ fun ExpenseFormDialog(
     errorParam: String?,
     isSaving: Boolean,
     existingExpense: ExpenseEntity? = null,
+    initialDateMillis: Long = System.currentTimeMillis(),
     onDismiss: () -> Unit,
     onConfirm: (String, String, String, Long?, Boolean, String, Int?, Long) -> Unit,
     onDelete: () -> Unit
@@ -226,8 +282,8 @@ fun ExpenseFormDialog(
     var recurrenceInterval by remember { mutableStateOf<Int?>(existingExpense?.recurrenceInterval) }
     var customInterval by remember { mutableStateOf(existingExpense?.recurrenceInterval?.toString() ?: "") }
 
-    var selectedDate by remember { 
-        val initialDate = existingExpense?.date ?: System.currentTimeMillis()
+    var selectedDate by remember(existingExpense, initialDateMillis) { 
+        val initialDate = existingExpense?.date ?: initialDateMillis
         val calendar = Calendar.getInstance()
         calendar.timeInMillis = initialDate
         
@@ -241,6 +297,7 @@ fun ExpenseFormDialog(
         utcCalendar.set(Calendar.MILLISECOND, 0)
         mutableStateOf(utcCalendar.timeInMillis)
     }
+
     var showDatePicker by remember { mutableStateOf(false) }
 
     val categories = listOf(
@@ -298,7 +355,7 @@ fun ExpenseFormDialog(
                         isError = isAmountError,
                         enabled = !isSaving
                     )
-                    if (isAmountError && errorResId != null) {
+                    if (isAmountError) {
                         Text(
                             text = if (errorParam != null) stringResource(errorResId, errorParam) else stringResource(errorResId),
                             color = MaterialTheme.colorScheme.error, 
@@ -316,10 +373,12 @@ fun ExpenseFormDialog(
                         isError = isConceptError,
                         enabled = !isSaving
                     )
-                    if (isConceptError && errorResId != null) {
+                    if (isConceptError) {
                         Text(stringResource(errorResId), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                     }
                 }
+
+
 
                 // Date Picker Button
                 item {
@@ -353,14 +412,18 @@ fun ExpenseFormDialog(
                                 .menuAnchor()
                                 .fillMaxWidth(),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = CyanBlue,
-                                unfocusedBorderColor = Color.Gray.copy(alpha = 0.5f),
-                                focusedLabelColor = CyanBlue,
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.LightGray
+                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                focusedLabelColor = MaterialTheme.colorScheme.primary,
+                                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                focusedTrailingIconColor = MaterialTheme.colorScheme.primary,
+                                unfocusedTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
                             ),
                             enabled = !isSaving
                         )
+
                         ExposedDropdownMenu(
                             expanded = expanded,
                             onDismissRequest = { expanded = false }
@@ -515,8 +578,13 @@ fun BudgetEditDialog(
         title = { Text(stringResource(R.string.edit_expense)) }, // Or new string
         text = {
             Column {
-                Text(stringResource(R.string.msg_budget_planned), style = MaterialTheme.typography.bodySmall, color = CyanBlue)
+                Text(
+                    stringResource(R.string.msg_budget_planned),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 Spacer(Modifier.height(16.dp))
+
                 OutlinedTextField(
                     value = amount,
                     onValueChange = { amount = it },

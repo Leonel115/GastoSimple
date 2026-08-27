@@ -53,7 +53,7 @@
     <string name="category_label">Categoría</string>
     <string name="payer_label">Pagador</string>
     <string name="shared_expense">Gasto Compartido</string>
-    <string name="remaining_budget">Saldo Restante</string>
+    <string name="remaining_budget">Saldo sin usar</string>
     <string name="planned_budget_info">Próximo presupuesto: $%s</string>
     <string name="pending_tag">Pendiente</string>
 
@@ -116,4 +116,26 @@
     <!-- Dashboard Refactor -->
     <string name="budget_excess">Exceso</string>
     <string name="budget_free">Restante</string>
+    <string name="budget_unused">Sin usar</string>
+    <string name="original_budget">Saldo original</string>
+    <string name="dashboard_filter_annual">Anual</string>
+    <string name="dashboard_filter_total">Total</string>
+    <string name="dashboard_year_content_desc">Seleccionar año</string>
+    <string name="dashboard_month_content_desc">Seleccionar mes</string>
+    <string name="dashboard_empty_title">Sin gastos en este período</string>
+    <string name="dashboard_empty_subtitle">No hay registros de consumo para el rango de fechas seleccionado.</string>
+
+    <!-- Settings / Ajustes (HU-11) -->
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_section_appearance">Apariencia</string>
+    <string name="settings_theme_mode">Modo</string>
+    <string name="settings_theme_mode_system">Sistema</string>
+    <string name="settings_theme_mode_light">Claro</string>
+    <string name="settings_theme_mode_dark">Oscuro</string>
+    <string name="settings_section_language">Idioma</string>
+    <string name="settings_language_label">Idioma de la aplicación</string>
+    <string name="settings_language_system">Sistema</string>
+    <string name="settings_language_spanish">Español</string>
+    <string name="settings_language_english">Inglés</string>
 </resources>
+

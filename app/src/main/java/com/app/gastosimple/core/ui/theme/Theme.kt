@@ -15,6 +15,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
+import com.app.gastosimple.core.data.prefs.AppThemeMode
+
 private val DarkColorScheme = darkColorScheme(
     primary = CoolBlue,
     onPrimary = OffWhite,
@@ -36,7 +38,7 @@ private val LightColorScheme = lightColorScheme(
     onPrimary = PureWhite,
     primaryContainer = LightCoolBlue,
     onPrimaryContainer = DeepCoolBlue,
-    secondary = CyanBlue,
+    secondary = DeepCoolBlue,
     onSecondary = PureWhite,
     background = PureWhite,
     onBackground = DarkGray,
@@ -47,9 +49,25 @@ private val LightColorScheme = lightColorScheme(
     error = ErrorRed
 )
 
+
+/**
+ * Resuelve si se debe usar el tema oscuro en función del modo seleccionado y el estado del sistema.
+ */
+fun resolveIsDarkTheme(
+    themeMode: AppThemeMode,
+    isSystemDark: Boolean
+): Boolean {
+    return when (themeMode) {
+        AppThemeMode.SYSTEM -> isSystemDark
+        AppThemeMode.LIGHT -> false
+        AppThemeMode.DARK -> true
+    }
+}
+
 @Composable
 fun GastoSimpleTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    themeMode: AppThemeMode = AppThemeMode.SYSTEM,
+    darkTheme: Boolean = resolveIsDarkTheme(themeMode, isSystemInDarkTheme()),
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = false, // Disabled for a more consistent brand identity
     content: @Composable () -> Unit
@@ -63,6 +81,7 @@ fun GastoSimpleTheme(
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
+
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {

@@ -32,6 +32,9 @@ interface GastoSimpleDao {
     @Query("SELECT * FROM expenses WHERE periodId = :periodId ORDER BY date DESC")
     fun getExpensesByPeriod(periodId: Long): Flow<List<ExpenseEntity>>
 
+    @Query("SELECT * FROM expenses WHERE isDeleted = 0 AND date >= :startTimestamp AND date <= :endTimestamp ORDER BY date DESC")
+    fun getExpensesByDateRange(startTimestamp: Long, endTimestamp: Long): Flow<List<ExpenseEntity>>
+
     @Query("SELECT * FROM expenses WHERE isDeleted = 0")
     fun getAllNonDeletedExpenses(): Flow<List<ExpenseEntity>>
 
@@ -48,6 +51,15 @@ interface GastoSimpleDao {
     @Query("SELECT * FROM budget_periods WHERE isActive = 1 LIMIT 1")
     fun getActivePeriod(): Flow<BudgetPeriodEntity?>
 
+    @Query("SELECT * FROM budget_periods WHERE (startDate <= :endTimestamp) AND (endDate IS NULL OR endDate >= :startTimestamp) ORDER BY startDate DESC")
+    fun getBudgetPeriodsByDateRange(startTimestamp: Long, endTimestamp: Long): Flow<List<BudgetPeriodEntity>>
+
     @Query("SELECT * FROM budget_periods ORDER BY startDate DESC")
     fun getAllPeriods(): Flow<List<BudgetPeriodEntity>>
+
+    @Query("SELECT DISTINCT date FROM expenses WHERE isDeleted = 0 UNION SELECT DISTINCT startDate FROM budget_periods")
+    fun getAllTransactionDates(): Flow<List<Long>>
+
+    @Query("SELECT (SELECT COUNT(*) FROM expenses) + (SELECT COUNT(*) FROM budget_periods)")
+    suspend fun getTotalRecordCount(): Int
 }

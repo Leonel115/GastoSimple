@@ -1,97 +1,199 @@
 package com.app.gastosimple.features.dashboard.domain
 
+import com.app.gastosimple.core.data.local.BudgetPeriodEntity
+import com.app.gastosimple.core.data.local.ExpenseEntity
 import com.app.gastosimple.features.expenses.ExpenseRepository
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.time.LocalDate
 
 /**
- * Caso de uso para obtener el progreso del presupuesto actual.
- * Aplica las fórmulas financieras y reglas de precisión especificadas en la HU-06.
+ * Caso de uso para obtener el progreso del presupuesto y métricas financieras del Dashboard (HU-06).
+ * Soporta filtrado temporal por Mes/Ciclo (MONTHLY), Anual (ANNUAL) y Total (TOTAL).
+ * Aplica aritmética de alta precisión con [BigDecimal] y [RoundingMode.HALF_UP].
  */
 class GetBudgetProgressUseCase(private val repository: ExpenseRepository) {
 
     private val officialCategories = listOf(
         "Servicios", "Alquiler", "Alimentación", "Suscripciones", "Otros"
     )
-    
-    @OptIn(ExperimentalCoroutinesApi::class)
+
+    /**
+     * Consulta el progreso del presupuesto para el periodo actual del sistema (Mes actual).
+     */
     operator fun invoke(): Flow<BudgetProgressUiState> {
-        return repository.getActivePeriod().flatMapLatest { period ->
-            if (period == null || period.totalBudget.toBigDecimalOrNull() == null || period.totalBudget.toBigDecimal() <= BigDecimal.ZERO) {
-                flowOf(BudgetProgressUiState(isEmpty = true))
+        val now = LocalDate.now()
+        return invoke(DashboardFilterMode.MONTHLY, now.year, now.monthValue)
+    }
+
+    /**
+     * Consulta el progreso del presupuesto filtrado por modo y fecha seleccionada.
+     *
+     * @param filterMode Modo de filtrado ([DashboardFilterMode.MONTHLY], [DashboardFilterMode.ANNUAL], [DashboardFilterMode.TOTAL]).
+     * @param year Año calendario consultado.
+     * @param month Mes consultado (1..12).
+     */
+    operator fun invoke(
+        filterMode: DashboardFilterMode,
+        year: Int,
+        month: Int
+    ): Flow<BudgetProgressUiState> {
+        val periodsFlow: Flow<List<BudgetPeriodEntity>>
+        val expensesFlow: Flow<List<ExpenseEntity>>
+
+        when (filterMode) {
+            DashboardFilterMode.MONTHLY -> {
+                val dateRange = DateRangeCalculator.calculateMonthRange(year, month)
+                periodsFlow = repository.getBudgetPeriodsByDateRange(dateRange.startMillis, dateRange.endMillis)
+                expensesFlow = repository.getExpensesByDateRange(dateRange.startMillis, dateRange.endMillis)
+            }
+            DashboardFilterMode.ANNUAL -> {
+                val dateRange = DateRangeCalculator.calculateYearRange(year)
+                periodsFlow = repository.getBudgetPeriodsByDateRange(dateRange.startMillis, dateRange.endMillis)
+                expensesFlow = repository.getExpensesByDateRange(dateRange.startMillis, dateRange.endMillis)
+            }
+            DashboardFilterMode.TOTAL -> {
+                periodsFlow = repository.getAllPeriods()
+                expensesFlow = repository.getAllExpenses()
+            }
+        }
+
+        val isPast = DateRangeCalculator.isPastPeriod(filterMode, year, month)
+
+        return periodsFlow.combine(expensesFlow) { periods, expenses ->
+            buildUiState(
+                periods = periods,
+                expenses = expenses,
+                filterMode = filterMode,
+                year = year,
+                month = month,
+                isPast = isPast
+            )
+        }
+    }
+
+    private fun buildUiState(
+        periods: List<BudgetPeriodEntity>,
+        expenses: List<ExpenseEntity>,
+        filterMode: DashboardFilterMode,
+        year: Int,
+        month: Int,
+        isPast: Boolean
+    ): BudgetProgressUiState {
+        val budgetTotal = calculateTotalBudget(periods)
+        val totalSpent = calculateTotalSpent(expenses)
+
+        if (budgetTotal <= BigDecimal.ZERO && totalSpent <= BigDecimal.ZERO) {
+            return BudgetProgressUiState(
+                isEmpty = true,
+                selectedFilterMode = filterMode,
+                selectedMonth = month,
+                selectedYear = year,
+                isPastPeriod = isPast
+            )
+        }
+
+        val availableBalance = budgetTotal.subtract(totalSpent).setScale(2, RoundingMode.HALF_UP)
+        val percentageConsumedBD = calculateConsumedPercentage(totalSpent, budgetTotal)
+        val percentageConsumed = percentageConsumedBD.toFloat()
+        val remainingPercentage = calculateRemainingPercentage(percentageConsumedBD)
+
+        val categoriesProgress = calculateCategoriesProgress(expenses, budgetTotal)
+        val adjustedCategories = adjustCategoryPercentages(categoriesProgress, percentageConsumed)
+
+        return BudgetProgressUiState(
+            budgetTotal = budgetTotal,
+            totalSpent = totalSpent,
+            availableBalance = availableBalance,
+            percentageConsumed = percentageConsumed,
+            remainingPercentage = remainingPercentage,
+            isOverBudget = totalSpent > budgetTotal && budgetTotal > BigDecimal.ZERO,
+            isEmpty = false,
+            categories = adjustedCategories,
+            selectedFilterMode = filterMode,
+            selectedMonth = month,
+            selectedYear = year,
+            isPastPeriod = isPast
+        )
+    }
+
+    private fun calculateTotalBudget(periods: List<BudgetPeriodEntity>): BigDecimal {
+        return periods.fold(BigDecimal.ZERO) { acc, period ->
+            val amount = period.totalBudget.toBigDecimalOrNull() ?: BigDecimal.ZERO
+            acc.add(amount)
+        }.setScale(2, RoundingMode.HALF_UP)
+    }
+
+    private fun calculateTotalSpent(expenses: List<ExpenseEntity>): BigDecimal {
+        return expenses.fold(BigDecimal.ZERO) { acc, expense ->
+            val amount = expense.amount.toBigDecimalOrNull() ?: BigDecimal.ZERO
+            acc.add(amount)
+        }.setScale(2, RoundingMode.HALF_UP)
+    }
+
+    private fun calculateConsumedPercentage(spent: BigDecimal, budget: BigDecimal): BigDecimal {
+        if (budget.compareTo(BigDecimal.ZERO) <= 0) return BigDecimal.ZERO
+        return spent.multiply(BigDecimal(100))
+            .divide(budget, 1, RoundingMode.HALF_UP)
+    }
+
+    private fun calculateRemainingPercentage(consumedBD: BigDecimal): Float {
+        val hundred = BigDecimal("100.0")
+        return if (consumedBD > hundred) {
+            0f
+        } else {
+            hundred.subtract(consumedBD).abs().toFloat()
+        }
+    }
+
+    private fun calculateCategoriesProgress(
+        expenses: List<ExpenseEntity>,
+        budgetTotal: BigDecimal
+    ): List<CategoryProgress> {
+        return officialCategories.map { categoryName ->
+            val categoryExpenses = if (categoryName == "Otros") {
+                expenses.filter { it.category !in (officialCategories - "Otros") }
             } else {
-                val budgetTotal = period.totalBudget.toBigDecimal().setScale(2, RoundingMode.HALF_UP)
-                
-                repository.getExpenses(period.id).map { expenses ->
-                    val totalSpent = expenses.fold(BigDecimal.ZERO) { acc, expense ->
-                        acc.add(expense.amount.toBigDecimal())
-                    }.setScale(2, RoundingMode.HALF_UP)
-                    
-                    val availableBalance = budgetTotal.subtract(totalSpent).setScale(2, RoundingMode.HALF_UP)
-                    
-                    val percentageConsumedBD = if (budgetTotal.compareTo(BigDecimal.ZERO) > 0) {
-                        totalSpent.multiply(BigDecimal(100))
-                            .divide(budgetTotal, 1, RoundingMode.HALF_UP)
-                    } else BigDecimal.ZERO
-                    
-                    val percentageConsumed = percentageConsumedBD.toFloat()
-                    val remainingPercentage = BigDecimal("100.0").subtract(percentageConsumedBD).abs().toFloat()
+                expenses.filter { it.category == categoryName }
+            }
 
-                    // Desglose por categorías (HU-06 Refactor)
-                    val categoriesProgress = officialCategories.map { categoryName ->
-                        val categoryExpenses = if (categoryName == "Otros") {
-                            expenses.filter { it.category !in (officialCategories - "Otros") }
-                        } else {
-                            expenses.filter { it.category == categoryName }
-                        }
+            val categoryAmount = calculateTotalSpent(categoryExpenses)
+            val categoryPercentage = if (budgetTotal.compareTo(BigDecimal.ZERO) > 0) {
+                categoryAmount.multiply(BigDecimal(100))
+                    .divide(budgetTotal, 1, RoundingMode.HALF_UP)
+                    .toFloat()
+            } else 0f
 
-                        val categoryAmount = categoryExpenses.fold(BigDecimal.ZERO) { acc, expense ->
-                            acc.add(expense.amount.toBigDecimal())
-                        }.setScale(2, RoundingMode.HALF_UP)
+            CategoryProgress(
+                name = categoryName,
+                amount = categoryAmount,
+                percentage = categoryPercentage
+            )
+        }
+    }
 
-                        val categoryPercentage = if (budgetTotal.compareTo(BigDecimal.ZERO) > 0) {
-                            categoryAmount.multiply(BigDecimal(100))
-                                .divide(budgetTotal, 1, RoundingMode.HALF_UP)
-                                .toFloat()
-                        } else 0f
+    private fun adjustCategoryPercentages(
+        categories: List<CategoryProgress>,
+        targetTotalPercentage: Float
+    ): List<CategoryProgress> {
+        if (categories.isEmpty()) return categories
 
-                        CategoryProgress(
-                            name = categoryName,
-                            amount = categoryAmount,
-                            percentage = categoryPercentage
-                        )
-                    }
+        val sumCategories = categories.sumOf { it.percentage.toDouble() }
+        val diff = targetTotalPercentage.toDouble() - sumCategories
 
-                    // Ajuste de precisión para que la suma de categorías coincida con percentageConsumed
-                    val adjustedCategories = if (categoriesProgress.isNotEmpty()) {
-                        val sumCategories = categoriesProgress.sumOf { it.percentage.toDouble() }
-                        val diff = percentageConsumed.toDouble() - sumCategories
-                        
-                        if (Math.abs(diff) > 0.001) {
-                            categoriesProgress.map { 
-                                if (it.name == "Otros") it.copy(percentage = (it.percentage + diff).toFloat())
-                                else it
-                            }
-                        } else categoriesProgress
-                    } else categoriesProgress
-                    
-                    BudgetProgressUiState(
-                        budgetTotal = budgetTotal,
-                        totalSpent = totalSpent,
-                        availableBalance = availableBalance,
-                        percentageConsumed = percentageConsumed,
-                        remainingPercentage = remainingPercentage,
-                        isOverBudget = totalSpent > budgetTotal,
-                        isEmpty = false,
-                        categories = adjustedCategories
-                    )
+        return if (Math.abs(diff) > 0.001) {
+            categories.map { category ->
+                if (category.name == "Otros") {
+                    category.copy(percentage = (category.percentage + diff).toFloat())
+                } else {
+                    category
                 }
             }
+        } else {
+            categories
         }
     }
 }
+
