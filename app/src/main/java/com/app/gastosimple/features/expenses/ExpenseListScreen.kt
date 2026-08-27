@@ -1,6 +1,7 @@
 package com.app.gastosimple.features.expenses
 
 import android.widget.Toast
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -173,9 +174,21 @@ fun ExpenseListScreen(viewModel: ExpenseViewModel) {
 fun ExpenseItem(expense: ExpenseEntity, userName: String, onClick: () -> Unit) {
     val dateFormat = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault())
     val isPending = expense.pendingAmount != null || expense.pendingRecurrenceInterval != null || expense.isPendingDeletion
-    
+    val isEmergency = expense.isEmergency
+
     Card(
-        modifier = Modifier.fillMaxWidth().clickable { onClick() }
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .border(
+                width = if (isEmergency) 1.dp else 0.dp,
+                color = if (isEmergency) MaterialTheme.colorScheme.error.copy(alpha = 0.5f) else Color.Transparent,
+                shape = CardDefaults.shape
+            ),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isEmergency) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f) 
+                             else MaterialTheme.colorScheme.surface
+        )
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {

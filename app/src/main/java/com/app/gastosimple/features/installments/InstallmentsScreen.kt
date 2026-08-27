@@ -16,18 +16,21 @@ import kotlinx.coroutines.flow.collectLatest
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InstallmentsScreen(
-    viewModel: InstallmentViewModel,
-    onNavigateToRegisterPayment: (Long) -> Unit // For future implementation of payment registration
+    viewModel: InstallmentViewModel
 ) {
     val balances by viewModel.balances.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    val congratulationsMsg = stringResource(R.string.msg_congratulations)
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.events.collectLatest { event ->
             when (event) {
                 is InstallmentEvent.Congratulate -> {
-                    snackbarHostState.showSnackbar(congratulationsMsg)
+                    snackbarHostState.showSnackbar(context.getString(R.string.msg_congratulations))
+                }
+                is InstallmentEvent.Error -> {
+                    snackbarHostState.showSnackbar(context.getString(event.resId))
                 }
             }
         }
@@ -67,10 +70,21 @@ fun InstallmentsScreen(
                 items(balances, key = { it.installment.id }) { balance ->
                     PendingBalanceCard(
                         balance = balance,
-                        onClick = { onNavigateToRegisterPayment(balance.installment.id) }
+                        onClick = { viewModel.onPaymentClicked(balance) }
                     )
                 }
             }
+        }
+
+        if (uiState.showPaymentDialog && uiState.selectedBalance != null) {
+            RegisterPaymentDialog(
+                balance = uiState.selectedBalance!!,
+                errorResId = uiState.errorResId,
+                onDismiss = { viewModel.onDismissPaymentDialog() },
+                onConfirm = { amount, concept ->
+                    viewModel.registerPayment(amount, concept)
+                }
+            )
         }
     }
 }

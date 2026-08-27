@@ -41,5 +41,5 @@ val appModule = module {
     viewModel { SetupViewModel(get(), get()) }
     viewModel { ExpenseViewModel(get(), get(), get(), get()) }
     viewModel { CalendarViewModel(get(), get()) }
-    viewModel { InstallmentViewModel(get(), get()) }
+    viewModel { InstallmentViewModel(get(), get(), get()) }
 }

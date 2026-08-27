@@ -70,12 +70,7 @@ fun NavGraph() {
                 CalendarScreen(viewModel = koinViewModel())
             }
             composable(Screen.Dashboard.route) {
-                InstallmentsScreen(
-                    viewModel = koinViewModel(),
-                    onNavigateToRegisterPayment = { installmentId ->
-                        // Placeholder for navigation to payment registration
-                    }
-                )
+                InstallmentsScreen(viewModel = koinViewModel())
             }
             composable(Screen.Settings.route) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

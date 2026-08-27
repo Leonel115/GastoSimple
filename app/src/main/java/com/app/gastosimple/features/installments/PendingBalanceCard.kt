@@ -1,5 +1,6 @@
 package com.app.gastosimple.features.installments
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
@@ -22,14 +23,20 @@ fun PendingBalanceCard(
 ) {
     val isEmergency = balance.installment.isEmergency
     val cardColor = if (isEmergency) {
-        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f)
+        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.9f)
     } else {
         MaterialTheme.colorScheme.surfaceVariant
     }
 
     Card(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .border(
+                width = if (isEmergency) 2.dp else 0.dp,
+                color = if (isEmergency) MaterialTheme.colorScheme.error else Color.Transparent,
+                shape = CardDefaults.shape
+            ),
         colors = CardDefaults.cardColors(containerColor = cardColor)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
