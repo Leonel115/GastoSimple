@@ -95,7 +95,7 @@ fun PendingBalanceCard(
             )
             
             Text(
-                text = "${(balance.progress * 100).toInt()}%",
+                text = "${Math.round(balance.progress * 100)}%",
                 style = MaterialTheme.typography.labelSmall,
                 modifier = Modifier.align(Alignment.End).padding(top = 4.dp)
             )

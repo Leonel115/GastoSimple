@@ -1,11 +1,18 @@
 package com.app.gastosimple.core.data.local
 
 import androidx.room.Dao
+import androidx.room.Embedded
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
+import java.math.BigDecimal
+
+data class InstallmentBalanceTuple(
+    @Embedded val installment: InstallmentExpenseEntity,
+    val totalPaid: BigDecimal?
+)
 
 @Dao
 interface GastoSimpleDao {
@@ -57,6 +64,18 @@ interface GastoSimpleDao {
 
     @Query("SELECT * FROM installment_expenses WHERE status = 'ACTIVE' ORDER BY startDate DESC")
     fun getActiveInstallments(): Flow<List<InstallmentExpenseEntity>>
+
+    @Query("""
+        SELECT 
+            i.*, 
+            CAST(COALESCE(SUM(e.amount), 0) AS TEXT) AS totalPaid
+        FROM installment_expenses i
+        LEFT JOIN expenses e ON i.id = e.installmentId
+        WHERE i.status = 'ACTIVE'
+        GROUP BY i.id
+        ORDER BY i.startDate DESC
+    """)
+    fun getActiveInstallmentsWithPaidAmount(): Flow<List<InstallmentBalanceTuple>>
 
     @Query("SELECT * FROM installment_expenses WHERE id = :id")
     suspend fun getInstallmentById(id: Long): InstallmentExpenseEntity?

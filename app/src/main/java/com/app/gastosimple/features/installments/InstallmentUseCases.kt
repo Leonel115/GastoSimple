@@ -16,21 +16,14 @@ class CalculateInstallmentQuotaUseCase {
     }
 }
 
-@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class GetActiveBalancesUseCase(private val dao: GastoSimpleDao) {
     operator fun invoke(): Flow<List<PendingBalance>> {
-        return dao.getActiveInstallments().flatMapLatest { installments ->
-            if (installments.isEmpty()) return@flatMapLatest flowOf(emptyList())
-            
-            val balanceFlows = installments.map { installment ->
-                dao.getPaymentsForInstallment(installment.id).map { payments ->
-                    val totalPaid = payments.sumOf { it.amount }
-                    PendingBalance.create(installment, totalPaid)
-                }
+        return dao.getActiveInstallmentsWithPaidAmount().map { tupleList ->
+            tupleList.map { tuple ->
+                val paidAmount = tuple.totalPaid ?: BigDecimal.ZERO
+                PendingBalance.create(tuple.installment, paidAmount)
             }
-            
-            combine(balanceFlows) { it.toList() }
-        }
+        }.flowOn(Dispatchers.IO)
     }
 }
 
