@@ -33,11 +33,11 @@ class InstallmentViewModel(
     private val _events = MutableSharedFlow<InstallmentEvent>()
     val events = _events.asSharedFlow()
 
-    val balances: StateFlow<List<PendingBalance>> = getActiveBalancesUseCase()
+    val balancesState: StateFlow<InstallmentBalancesState> = getActiveBalancesUseCase()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
+            initialValue = InstallmentBalancesState()
         )
 
     fun onPaymentClicked(balance: PendingBalance) {

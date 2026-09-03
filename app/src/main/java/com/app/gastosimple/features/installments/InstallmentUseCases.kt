@@ -17,12 +17,15 @@ class CalculateInstallmentQuotaUseCase {
 }
 
 class GetActiveBalancesUseCase(private val dao: GastoSimpleDao) {
-    operator fun invoke(): Flow<List<PendingBalance>> {
-        return dao.getActiveInstallmentsWithPaidAmount().map { tupleList ->
-            tupleList.map { tuple ->
+    operator fun invoke(): Flow<InstallmentBalancesState> {
+        return dao.getAllInstallmentsWithPaidAmount().map { tupleList ->
+            val allBalances = tupleList.map { tuple ->
                 val paidAmount = tuple.totalPaid ?: BigDecimal.ZERO
                 PendingBalance.create(tuple.installment, paidAmount)
             }
+            val active = allBalances.filter { it.installment.status == ObligationStatus.ACTIVE }
+            val settled = allBalances.filter { it.installment.status == ObligationStatus.SETTLED }
+            InstallmentBalancesState(activeBalances = active, settledBalances = settled)
         }.flowOn(Dispatchers.IO)
     }
 }

@@ -19,13 +19,14 @@ import com.app.gastosimple.core.ui.theme.CyanBlue
 fun PendingBalanceCard(
     balance: PendingBalance,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isSettled: Boolean = false
 ) {
     val isEmergency = balance.installment.isEmergency
-    val cardColor = if (isEmergency) {
-        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.9f)
-    } else {
-        MaterialTheme.colorScheme.surfaceVariant
+    val cardColor = when {
+        isSettled -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+        isEmergency -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.9f)
+        else -> MaterialTheme.colorScheme.surfaceVariant
     }
 
     Card(
@@ -33,8 +34,8 @@ fun PendingBalanceCard(
         modifier = modifier
             .fillMaxWidth()
             .border(
-                width = if (isEmergency) 2.dp else 0.dp,
-                color = if (isEmergency) MaterialTheme.colorScheme.error else Color.Transparent,
+                width = if (isEmergency && !isSettled) 2.dp else 0.dp,
+                color = if (isEmergency && !isSettled) MaterialTheme.colorScheme.error else Color.Transparent,
                 shape = CardDefaults.shape
             ),
         colors = CardDefaults.cardColors(containerColor = cardColor)
@@ -50,7 +51,20 @@ fun PendingBalanceCard(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                if (isEmergency) {
+                if (isSettled) {
+                    Surface(
+                        color = Color(0xFF4CAF50).copy(alpha = 0.2f),
+                        shape = MaterialTheme.shapes.extraSmall
+                    ) {
+                        Text(
+                            text = stringResource(R.string.settled_tag),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color(0xFF4CAF50),
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                } else if (isEmergency) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.Warning,
@@ -73,29 +87,33 @@ fun PendingBalanceCard(
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 DetailItem(stringResource(R.string.original_capital), "$${balance.originalCapital}")
-                DetailItem(stringResource(R.string.total_paid), "$${balance.totalPaid}")
+                DetailItem(stringResource(R.string.total_paid), "$${if (isSettled) balance.originalCapital else balance.totalPaid}")
             }
 
             Spacer(Modifier.height(8.dp))
 
             Text(
-                text = stringResource(R.string.remaining_balance_label) + ": $${balance.remainingBalance}",
+                text = stringResource(R.string.remaining_balance_label) + ": $${if (isSettled) "0.00" else balance.remainingBalance}",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
-                color = if (isEmergency) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                color = when {
+                    isSettled -> Color(0xFF4CAF50)
+                    isEmergency -> MaterialTheme.colorScheme.error
+                    else -> MaterialTheme.colorScheme.primary
+                }
             )
 
             Spacer(Modifier.height(8.dp))
 
             LinearProgressIndicator(
-                progress = { balance.progress },
+                progress = { if (isSettled) 1.0f else balance.progress },
                 modifier = Modifier.fillMaxWidth().height(8.dp),
-                color = if (isEmergency) MaterialTheme.colorScheme.error else CyanBlue,
+                color = if (isSettled) Color(0xFF4CAF50) else if (isEmergency) MaterialTheme.colorScheme.error else CyanBlue,
                 trackColor = Color.Gray.copy(alpha = 0.2f)
             )
             
             Text(
-                text = "${Math.round(balance.progress * 100)}%",
+                text = if (isSettled) "100%" else "${Math.round(balance.progress * 100)}%",
                 style = MaterialTheme.typography.labelSmall,
                 modifier = Modifier.align(Alignment.End).padding(top = 4.dp)
             )

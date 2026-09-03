@@ -143,10 +143,10 @@ fun ExpenseListScreen(viewModel: ExpenseViewModel) {
                     if (isInstallment) {
                         viewModel.addInstallmentExpense(
                             amount, concept, category, userId, isShared, 
-                            totalInstallments ?: 1, frequency ?: InstallmentFrequency.MONTHLY, isEmergency
+                            totalInstallments ?: 2, frequency ?: InstallmentFrequency.MONTHLY, isEmergency
                         )
                     } else {
-                        viewModel.addExpense(amount, concept, category, userId, isShared, recurrence, interval)
+                        viewModel.addExpense(amount, concept, category, userId, isShared, recurrence, interval, isEmergency)
                     }
                 } else {
                     viewModel.editExpense(selectedExpense!!, amount, concept, category, userId, isShared, recurrence, interval)
@@ -269,7 +269,6 @@ fun ExpenseFormDialog(
 
     LaunchedEffect(category) {
         if (category == "Suscripciones" || category == "Alquiler" || category == "Servicios") {
-            isRecurrent = true
             if (recurrenceInterval == null) recurrenceInterval = 30
         }
     }
@@ -364,8 +363,16 @@ fun ExpenseFormDialog(
                         Text(stringResource(R.string.is_recurrent_label), style = MaterialTheme.typography.bodyMedium)
                         Switch(
                             checked = isRecurrent,
-                            onCheckedChange = { if (!isSaving) isRecurrent = it },
-                            enabled = !isSaving && category != "Suscripciones" && category != "Alquiler" && category != "Servicios"
+                            onCheckedChange = { checked ->
+                                if (!isSaving) {
+                                    isRecurrent = checked
+                                    if (checked) {
+                                        isInstallment = false
+                                        isEmergency = false
+                                    }
+                                }
+                            },
+                            enabled = !isSaving && !isInstallment && !isEmergency
                         )
                     }
                 }
@@ -439,22 +446,38 @@ fun ExpenseFormDialog(
                             Text(stringResource(R.string.is_installment_label), style = MaterialTheme.typography.bodyMedium)
                             Switch(
                                 checked = isInstallment,
-                                onCheckedChange = { isInstallment = it },
-                                enabled = !isSaving
+                                onCheckedChange = { checked ->
+                                    if (!isSaving) {
+                                        isInstallment = checked
+                                        if (checked) {
+                                            isRecurrent = false
+                                        }
+                                    }
+                                },
+                                enabled = !isSaving && !isRecurrent
                             )
                         }
                     }
 
                     if (isInstallment) {
                         item {
+                            val isInstallmentError = (totalInstallments.toIntOrNull() ?: 0) < 2
                             OutlinedTextField(
                                 value = totalInstallments,
                                 onValueChange = { totalInstallments = it },
                                 label = { Text(stringResource(R.string.total_installments_label)) },
                                 modifier = Modifier.fillMaxWidth(),
                                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                                isError = isInstallmentError,
                                 enabled = !isSaving
                             )
+                            if (isInstallmentError) {
+                                Text(
+                                    text = stringResource(R.string.err_min_installments),
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
                         }
                         item {
                             var expanded by remember { mutableStateOf(false) }
@@ -499,8 +522,15 @@ fun ExpenseFormDialog(
                             Text(stringResource(R.string.is_emergency_label), style = MaterialTheme.typography.bodyMedium)
                             Switch(
                                 checked = isEmergency,
-                                onCheckedChange = { isEmergency = it },
-                                enabled = !isSaving
+                                onCheckedChange = { checked ->
+                                    if (!isSaving) {
+                                        isEmergency = checked
+                                        if (checked) {
+                                            isRecurrent = false
+                                        }
+                                    }
+                                },
+                                enabled = !isSaving && !isRecurrent
                             )
                         }
                     }

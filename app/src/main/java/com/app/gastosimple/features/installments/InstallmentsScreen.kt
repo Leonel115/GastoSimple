@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
 import com.app.gastosimple.R
 import kotlinx.coroutines.flow.collectLatest
 
@@ -18,7 +19,7 @@ import kotlinx.coroutines.flow.collectLatest
 fun InstallmentsScreen(
     viewModel: InstallmentViewModel
 ) {
-    val balances by viewModel.balances.collectAsState()
+    val balancesState by viewModel.balancesState.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -36,6 +37,8 @@ fun InstallmentsScreen(
         }
     }
 
+    val hasNoBalances = balancesState.activeBalances.isEmpty() && balancesState.settledBalances.isEmpty()
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
@@ -44,7 +47,7 @@ fun InstallmentsScreen(
             )
         }
     ) { padding ->
-        if (balances.isEmpty()) {
+        if (hasNoBalances) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -67,11 +70,42 @@ fun InstallmentsScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(balances, key = { it.installment.id }) { balance ->
-                    PendingBalanceCard(
-                        balance = balance,
-                        onClick = { viewModel.onPaymentClicked(balance) }
-                    )
+                if (balancesState.activeBalances.isNotEmpty()) {
+                    item {
+                        Text(
+                            text = stringResource(R.string.active_obligations_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                    }
+                    items(balancesState.activeBalances, key = { "active_${it.installment.id}" }) { balance ->
+                        PendingBalanceCard(
+                            balance = balance,
+                            onClick = { viewModel.onPaymentClicked(balance) }
+                        )
+                    }
+                }
+
+                if (balancesState.settledBalances.isNotEmpty()) {
+                    item {
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            text = stringResource(R.string.settled_history_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                    }
+                    items(balancesState.settledBalances, key = { "settled_${it.installment.id}" }) { balance ->
+                        PendingBalanceCard(
+                            balance = balance,
+                            onClick = { /* Deudas liquidadas son de solo lectura */ },
+                            isSettled = true
+                        )
+                    }
                 }
             }
         }

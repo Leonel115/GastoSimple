@@ -32,3 +32,8 @@ data class PendingBalance(
         }
     }
 }
+
+data class InstallmentBalancesState(
+    val activeBalances: List<PendingBalance> = emptyList(),
+    val settledBalances: List<PendingBalance> = emptyList()
+)

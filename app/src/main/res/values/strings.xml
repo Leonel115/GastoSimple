@@ -109,6 +109,9 @@
     <string name="is_installment_label">¿Es un compromiso por cuotas?</string>
     <string name="total_installments_label">Número de plazos</string>
     <string name="is_emergency_label">¿Es un gasto de emergencia?</string>
+    <string name="active_obligations_title">Obligaciones Activas</string>
+    <string name="settled_history_title">Historial de Liquidados</string>
+    <string name="settled_tag">Saldado</string>
 
     <!-- Categories -->
     <string name="cat_rent">Alquiler</string>

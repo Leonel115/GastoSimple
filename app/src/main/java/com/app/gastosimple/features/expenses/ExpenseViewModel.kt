@@ -85,7 +85,8 @@ class ExpenseViewModel(
         userId: Long?,
         isShared: Boolean,
         recurrence: String,
-        recurrenceInterval: Int?
+        recurrenceInterval: Int?,
+        isEmergency: Boolean = false
     ) {
         if (_state.value.isAddingExpense) return
         
@@ -126,7 +127,8 @@ class ExpenseViewModel(
                         date = Date().time,
                         recurrence = recurrence,
                         recurrenceInterval = recurrenceInterval,
-                        periodId = periodId
+                        periodId = periodId,
+                        isEmergency = isEmergency
                     )
                 )
                 _state.value = _state.value.copy(infoResId = R.string.msg_expense_added)

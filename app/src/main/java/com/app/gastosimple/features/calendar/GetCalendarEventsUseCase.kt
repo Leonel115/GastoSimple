@@ -11,40 +11,54 @@ import java.math.BigDecimal
 class GetCalendarEventsUseCase(private val dao: GastoSimpleDao) {
 
     /**
-     * Retorna una lista unificada de fuentes de eventos.
-     * La proyección de cada instancia se realiza en la UI o ViewModel
-     * para evitar generar listas infinitas en el Flow.
+     * Retorna una lista unificada de fuentes de eventos:
+     * - Pagos reales (históricos) grabados en la tabla expenses.
+     * - Plantillas de gastos recurrentes.
+     * - Compromisos por cuotas ACTIVOS exclusivamente.
      */
     operator fun invoke(): Flow<List<CalendarEventSource>> = combine(
+        dao.getAllExpenses(),
         dao.getRecurringExpenses(),
         dao.getActiveInstallments()
-    ) { expenses, installments ->
-        val expenseEvents = expenses.map { 
+    ) { allExpenses, recurringExpenses, activeInstallments ->
+        val realPaymentSources = allExpenses.map { expense ->
             CalendarEventSource(
-                id = it.id,
-                concept = it.concept,
-                amount = it.amount,
-                startDate = it.date,
-                intervalDays = it.recurrenceInterval ?: 0,
+                id = expense.id,
+                concept = expense.concept,
+                amount = expense.amount,
+                startDate = expense.date,
+                intervalDays = 0, // No proyecta hacia el futuro, es un evento real
+                type = if (expense.installmentId != null) CalendarEventType.INSTALLMENT else CalendarEventType.RECURRING,
+                isEmergency = expense.isEmergency
+            )
+        }
+
+        val recurringSources = recurringExpenses.map { expense ->
+            CalendarEventSource(
+                id = expense.id,
+                concept = expense.concept,
+                amount = expense.amount,
+                startDate = expense.date,
+                intervalDays = expense.recurrenceInterval ?: 0,
                 type = CalendarEventType.RECURRING,
-                isEmergency = it.isEmergency
+                isEmergency = expense.isEmergency
             )
         }
 
-        val installmentEvents = installments.map {
+        val activeInstallmentSources = activeInstallments.map { installment ->
             CalendarEventSource(
-                id = it.id,
-                concept = it.description,
-                amount = it.totalAmount.divide(it.totalInstallments.toBigDecimal(), 2, java.math.RoundingMode.HALF_UP),
-                startDate = it.startDate,
-                intervalDays = if (it.frequency == InstallmentFrequency.BIWEEKLY) 15 else 30,
+                id = installment.id,
+                concept = installment.description,
+                amount = installment.totalAmount.divide(installment.totalInstallments.toBigDecimal(), 2, java.math.RoundingMode.HALF_UP),
+                startDate = installment.startDate,
+                intervalDays = if (installment.frequency == InstallmentFrequency.BIWEEKLY) 15 else 30,
                 type = CalendarEventType.INSTALLMENT,
-                isEmergency = it.isEmergency,
-                totalInstallments = it.totalInstallments
+                isEmergency = installment.isEmergency,
+                totalInstallments = installment.totalInstallments
             )
         }
 
-        expenseEvents + installmentEvents
+        realPaymentSources + recurringSources + activeInstallmentSources
     }.flowOn(Dispatchers.IO)
 }
 

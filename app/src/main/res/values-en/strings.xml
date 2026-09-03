@@ -109,6 +109,9 @@
     <string name="is_installment_label">Is it an installment commitment?</string>
     <string name="total_installments_label">Number of installments</string>
     <string name="is_emergency_label">Is it an emergency expense?</string>
+    <string name="active_obligations_title">Active Obligations</string>
+    <string name="settled_history_title">Settled History</string>
+    <string name="settled_tag">Settled</string>
 
     <!-- Categories -->
     <string name="cat_rent">Rent</string>

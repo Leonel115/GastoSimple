@@ -39,6 +39,9 @@ interface GastoSimpleDao {
     @Query("SELECT * FROM expenses WHERE periodId = :periodId ORDER BY date DESC")
     fun getExpensesByPeriod(periodId: Long): Flow<List<ExpenseEntity>>
 
+    @Query("SELECT * FROM expenses ORDER BY date DESC")
+    fun getAllExpenses(): Flow<List<ExpenseEntity>>
+
     @Query("SELECT * FROM expenses WHERE recurrence != 'NONE'")
     fun getRecurringExpenses(): Flow<List<ExpenseEntity>>
 
@@ -71,11 +74,10 @@ interface GastoSimpleDao {
             CAST(COALESCE(SUM(e.amount), 0) AS TEXT) AS totalPaid
         FROM installment_expenses i
         LEFT JOIN expenses e ON i.id = e.installmentId
-        WHERE i.status = 'ACTIVE'
         GROUP BY i.id
         ORDER BY i.startDate DESC
     """)
-    fun getActiveInstallmentsWithPaidAmount(): Flow<List<InstallmentBalanceTuple>>
+    fun getAllInstallmentsWithPaidAmount(): Flow<List<InstallmentBalanceTuple>>
 
     @Query("SELECT * FROM installment_expenses WHERE id = :id")
     suspend fun getInstallmentById(id: Long): InstallmentExpenseEntity?
